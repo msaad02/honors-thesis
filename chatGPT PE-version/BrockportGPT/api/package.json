@@ -1,0 +1,23 @@
+{
+  "name": "chatgpt-starter-kit",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@operandinc/sdk": "^5.0.19",
+    "body-parser": "^1.20.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "morgan": "^1.10.0",
+    "openai": "^3.2.1"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.2.4"
+  },
+  "type": "module"
+}
