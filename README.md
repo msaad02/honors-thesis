@@ -17,3 +17,5 @@ Allow students and faculty to prompt the chatbot, returning information specific
 **Prompt:** How can I apply?
 
 **Response:** You can apply to SUNY Brockport many ways, including using the Common Application, or the SUNY Application. Please refer to www2.brockport.edu/admissions/apply for more information!
+
+EPIC!
