@@ -1,3 +1,5 @@
 *.p
 
 output.json
+
+data/*
