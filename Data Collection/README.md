@@ -57,7 +57,7 @@ At depth 5, and originating from the [SUNY Brockport Homepage](https://www2.broc
         "instruction": "Where can I find the faculty and staff directory?",
         "input": "",
         "output": "The faculty and staff directory can be found on the college website."
-    },..
+    },...
 ]
 ```
 
