@@ -39,7 +39,7 @@ The key idea of what I've done in this step is to run up to 64 calls to the Open
 ---
 ## Results
 
-At depth 5, and originating from the [brockport homepage](https://www2.brockport.edu/), there are 5413 webpages I've scraped. At a depth of 6, there would be an additional 1187 webpages as well. In total there were 113,862 question/answer combinations generated. Here is an example of the json output for 3 of the questions:
+At depth 5, and originating from the [SUNY Brockport homepage](https://www2.brockport.edu/), there are 5413 webpages I've scraped. At a depth of 6, there would be an additional 1187 webpages as well. In total there were 113,862 question/answer combinations generated. Here is an example of the json output for 3 of the questions:
 
 ```
 [
