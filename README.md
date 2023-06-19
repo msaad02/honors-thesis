@@ -1,4 +1,4 @@
-# Title: Conversational Chatbot for SUNY Brockport
+# Conversational Chatbot for SUNY Brockport
 
 ## Introduction
 
