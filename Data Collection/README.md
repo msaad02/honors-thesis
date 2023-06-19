@@ -11,7 +11,7 @@ The primary source of data at our disposal comes directly from the SUNY Brockpor
 
 Using data from the website requires us to scrape the site. I've implemented a version of this in [brockport-scraping.ipynb](brockport-scraping.ipynb). In that file, data is collected recursively. From some set of links (or one, in my case, the [SUNY Brockport Homepage](https://www2.brockport.edu/)) all their webpages are retreived. From there I collect all the links on each of those webpages, and apply a set of filters. Most importantly, these filters include: obeying robots.txt, deduplication, and checking against the webpages already gathered (a webpage should not be searched twice), and some Brockport specific filters. Once that is all complete, we feed those links back in to the original function - hence the recursion. Also, importantly, there is a 1-3 second delay between calls to each webpage. This is done to respect the usability of the website for others. See the image below for a visual:
 
-![Data Generation Process](https://i.ibb.co/JQjCLYm/cycle.png)
+![Data Generation Process](https://i.ibb.co/KjnySP1/cycle-white.png)
 
 Since this happens recursively after each loop there should be more links (until we've depleted them all). For increasigly high depths then we should approach the true number of webpages on the Brockport website. 
 
