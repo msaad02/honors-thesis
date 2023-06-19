@@ -4,12 +4,10 @@
 
 In this section, provide a brief introduction to your project. Explain why this project is significant and who it's intended for.
 
----
 ## Research Question
 
 "What is the most effective methodology for creating a chatbot that can accurately and efficiently provide information on SUNY Brockport-related topics, while ensuring its scope remains limited to the institution?"
 
----
 ## Objectives/Goals
 
 - Allow students and faculty to prompt the chatbot, returning information specifically about Brockport. 
@@ -23,7 +21,6 @@ In this section, provide a brief introduction to your project. Explain why this 
 > **Prompt**: What is the cost of a double room for the Fall 2023 semester?  
 > **Response**: The cost of a double room for the Fall 2023 semester is $4,765. 
 
----
 ## Methodology
 
 This project entails exploring three different methods to make a chatbot for SUNY Brockport.
@@ -34,7 +31,6 @@ This project entails exploring three different methods to make a chatbot for SUN
 
 Each method will be assessed for its effectiveness in generating accurate and contextually appropriate responses.
 
----
 ## Technologies Used
 
 The following technologies were used in the three distinct methodologies implemented in this project:
@@ -55,7 +51,6 @@ The following technologies were used in the three distinct methodologies impleme
 ### Method 3: Building a model from scratch
 - TBD
 
----
 ## Technical Details / Timeline
 
 1. Conduct a literature review and analyze similar projects.
