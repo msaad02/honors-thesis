@@ -81,7 +81,7 @@ TBD
 
 ## Contributors
 
-Matthew Saad primarily, and Professor Qawaqneh for advisement
+Matthew Saad, and Professor Qawaqneh for advisement
 
 ## References
 
