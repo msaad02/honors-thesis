@@ -28,7 +28,7 @@ from tqdm import tqdm
 import csv
 
 data_folder = "/home/msaad/workspace/honors-thesis/data-collection/data/"
-responses_html = pickle.load(open(data_folder + "scraper_output.p", "rb"))
+responses_dict = pickle.load(open(data_folder + "scraper_output.p", "rb"))
 
 def get_text(response: requests.models.Response) -> list:
     """
@@ -58,7 +58,7 @@ def get_text(response: requests.models.Response) -> list:
 
 print("Begin fetching all the sentences...")
 # Wrap your iterable with tqdm() to see progress bar
-all_sentences = [sentence for response in tqdm(responses_html.values()) for sentence in get_text(response)]
+all_sentences = [sentence for response in tqdm(responses_dict.values()) for sentence in get_text(response)]
 print(f"Saving off {len(all_sentences)} sentences.")
 
 # Save off to a csv file
