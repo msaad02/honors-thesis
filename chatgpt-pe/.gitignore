@@ -1,3 +1,4 @@
 db/
 db_split/
 .chroma/
+db_test/

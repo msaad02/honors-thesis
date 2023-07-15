@@ -17,15 +17,34 @@ and applies a series of conditions to filter the content. These conditions inclu
 2. Filtering out any strings that contain characters other than alphanumeric, certain punctuation marks (.,/?!:;$#&+*()")
 3. Removing any strings that contain more than three consecutive whitespace characters
 
-The result of this script is a list of cleaned sentences which are then written to a CSV file. This file will serve as an 
-accessible input to a vector database, facilitating efficient storage, retrieval, and analysis of the Brockport website content.
+The result of that description is a list of cleaned html pages which are then written to a CSV file. That csv file will serve as an 
+accessible input to a vector database, which is more specifically addressed later in this script.
+
+Once the csv is generated, it is then split line by line into txt files. The tool of choice for this project, langchain, opts for
+data folders to be specified instead of large files. Then, any txt file inside that folder can be read, have embeddings
+generated, etc. etc torwards the end of having a functional vector database. So, obviously I need to split up that csv file. 
+That is done in the last part of this script, which reads in the csv, and iterates over each line, creating a txt file
+for each one. This should facilite efficient storage, retrieval, and analysis of the Brockport website content.
 """
+
 from bs4 import BeautifulSoup
 import pickle
 import re
 import requests
 from tqdm import tqdm
 import csv
+import pandas as pd
+
+"""
+NOTE July 15th Update: 
+Some of the naming here is slightly off now. Previously where 'sentences' were used, I am now generating 'chunks'.
+A chunk is basically just a group of all the sentences inside the response. In the first implementation, with sentences,
+when it came time to use semantic search the results were wayy too short and off the mark in terms of context. It 
+turns out, that most of the sentences are meaningfully related, so to arbitrarily cutoff at every newline doesn't
+make sense - hence now I'm joining the sentences together for each of the responses.
+
+Basically, think chunk as the text portion of a webpage. If you have 1000 text rich html responses, you should end up with a 1000 row csv.
+"""
 
 data_folder = "/home/msaad/workspace/honors-thesis/data-collection/data/"
 responses_dict = pickle.load(open(data_folder + "scraper_output.p", "rb"))
@@ -40,7 +59,7 @@ def get_text(response: requests.models.Response) -> list:
     # Create an empty list to hold the sentences
     long_texts = []
 
-    # Define your custom punctuation
+    # Define custom punctuation
     custom_punctuation = ',./?!:;$#&+*()"'
 
     # Loop through all the strings in the BeautifulSoup object
@@ -53,16 +72,35 @@ def get_text(response: requests.models.Response) -> list:
                 if not re.search(' {3,}', string):
                     long_texts.append(string)
 
-    # Now, long_texts list contains all the sentences fitting the criteria described above.
-    return long_texts
+    # NEW: Added so semantic search queries return bigger, more in context results.
+    # "chunk" is a string of all the long sentences (as described above) separated by a newline.
+    chunk = " ".join(long_texts)
+    
+    # OLD: return long_texts
+    return chunk
 
 print("Begin fetching all the sentences...")
-# Wrap your iterable with tqdm() to see progress bar
-all_sentences = [sentence for response in tqdm(responses_dict.values()) for sentence in get_text(response)]
+# Wrap iterable with tqdm() to see progress bar
+# Maps get_text over the response dictionary to generate a list of chunks. Filers out the empty ones, and saves to `all_sentences`
+all_sentences = list(filter(lambda x: x != '', map(get_text, tqdm(responses_dict.values()))))
+
+# OLD: 
+# all_sentences = [sentence for response in tqdm(responses_dict.values()) for sentence in get_text(response)]
 print(f"Saving off {len(all_sentences)} sentences.")
 
 # Save off to a csv file
-with open(data_folder + "sentences.csv", 'w', newline='') as f:
+csv_name = "chunks_from_html.csv"
+with open(data_folder + csv_name, 'w', newline='') as f:
     writer = csv.writer(f)
     for sentence in all_sentences:
         writer.writerow([sentence])
+
+
+# Now to split up the file into chunks for langchain
+chunks_csv = pd.read_csv(data_folder + csv_name)
+
+for row_index in range(len(chunks_csv)):
+    # open the file with write mode
+    with open(f"{data_folder}vectordb_filestore/chunk_{row_index}.txt", 'w') as file:
+        # write a row of the csv to the file
+        file.write(chunks_csv.iloc[row_index, 0])
