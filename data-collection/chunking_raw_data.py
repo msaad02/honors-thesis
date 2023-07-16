@@ -100,6 +100,7 @@ chunks_csv = pd.read_csv(data_folder + csv_name)
 
 for row_index in range(len(chunks_csv)):
     # open the file with write mode
-    with open(f"{data_folder}vectordb_filestore/chunk_{row_index}.txt", 'w') as file:
+    path = chunks_csv.iloc[row_index, 0].replace('https://www2.', '').replace('/', '_')
+    with open(f"{data_folder}vectordb_filestore/chunk_{path}.txt", 'w') as file:
         # write a row of the csv to the file
-        file.write(chunks_csv.iloc[row_index, 0])
+        file.write(chunks_csv.iloc[row_index, 1])
