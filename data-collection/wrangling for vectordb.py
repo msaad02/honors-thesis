@@ -73,7 +73,7 @@ def get_text(response: requests.models.Response) -> list:
                     long_texts.append(string)
 
     # NEW: Added so semantic search queries return bigger, more in context results.
-    # "chunk" is a string of all the long sentences (as described above) separated by a newline.
+    # "chunk" is a string of all the long sentences (as described above) separated by a space.
     chunk = " ".join(long_texts)
     
     # OLD: return long_texts
