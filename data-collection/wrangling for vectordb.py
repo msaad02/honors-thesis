@@ -49,10 +49,12 @@ Basically, think chunk as the text portion of a webpage. If you have 1000 text r
 data_folder = "/home/msaad/workspace/honors-thesis/data-collection/data/"
 responses_dict = pickle.load(open(data_folder + "scraper_output.p", "rb"))
 
-def get_text(response: requests.models.Response) -> list:
+def get_text(item: tuple[str, requests.models.Response]) -> list:
     """
     Parses HTML for 'sentences', as described above.
     """
+    key, response = item
+
     # Your BeautifulSoup object
     soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -77,23 +79,20 @@ def get_text(response: requests.models.Response) -> list:
     chunk = " ".join(long_texts)
     
     # OLD: return long_texts
-    return chunk
+    return key, chunk
 
 print("Begin fetching all the sentences...")
-# Wrap iterable with tqdm() to see progress bar
-# Maps get_text over the response dictionary to generate a list of chunks. Filers out the empty ones, and saves to `all_sentences`
-all_sentences = list(filter(lambda x: x != '', map(get_text, tqdm(responses_dict.values()))))
-
-# OLD: 
-# all_sentences = [sentence for response in tqdm(responses_dict.values()) for sentence in get_text(response)]
+# Maps get_text over the dictionary to generate a list of key/chunk pairs. 
+# Filers out the empty ones, and saves to `all_sentences`
+all_sentences = list(filter(lambda x: x[1] != '', map(get_text, tqdm(responses_dict.items()))))
 print(f"Saving off {len(all_sentences)} sentences.")
 
 # Save off to a csv file
 csv_name = "chunks_from_html.csv"
 with open(data_folder + csv_name, 'w', newline='') as f:
     writer = csv.writer(f)
-    for sentence in all_sentences:
-        writer.writerow([sentence])
+    for key, sentence in all_sentences:
+        writer.writerow([key, sentence])
 
 
 # Now to split up the file into chunks for langchain
