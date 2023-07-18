@@ -34,6 +34,7 @@ import requests
 from tqdm import tqdm
 import csv
 import pandas as pd
+import os
 
 """
 NOTE July 15th Update: 
@@ -44,6 +45,16 @@ turns out, that most of the sentences are meaningfully related, so to arbitraril
 make sense - hence now I'm joining the sentences together for each of the responses.
 
 Basically, think chunk as the text portion of a webpage. If you have 1000 text rich html responses, you should end up with a 1000 row csv.
+"""
+
+"""
+NOTE July 16th Update:
+It appears my data is actually quite imperfect. Atleast from the chunk_from_html.csv it is apparent that there are a lot of duplicates! 
+Some of the webpages I will need to filter out, so that semantic search doesn't return copies. My initial filter cut down everything by about half! 
+I need to look at this closer. However, preliminary results seem to be much improved. This is the clear next step for prompt engineering.
+
+NOTE July 17th Update:
+Dedupe complete at the bottom of this script.
 """
 
 data_folder = "/home/msaad/workspace/honors-thesis/data-collection/data/"
@@ -96,11 +107,26 @@ with open(data_folder + csv_name, 'w', newline='') as f:
 
 
 # Now to split up the file into chunks for langchain
-chunks_csv = pd.read_csv(data_folder + csv_name)
+chunks_csv = pd.read_csv(data_folder + csv_name, names=['source', 'data'])
+
+# Mid July discovery! I have quite a bit of duplicate data, so this clears it out.
+chunks_csv = chunks_csv[~chunks_csv['data'].duplicated(keep='first')]
+chunks_store_path = f"{data_folder}vectordb_filestore/"
+
+# Check if path exists, if not, make it?
+if not os.path.exists(chunks_store_path):
+    response = input(f"\n{chunks_store_path} does not exist.\nWould you like to create it (y/n)? ")
+    if response in 'yY':
+        os.mkdir(chunks_store_path)
+    else:
+        print("Path not available. Cannot save off chunks.")
+        exit(1)
 
 for row_index in range(len(chunks_csv)):
     # open the file with write mode
     path = chunks_csv.iloc[row_index, 0].replace('https://www2.', '').replace('/', '_')
-    with open(f"{data_folder}vectordb_filestore/chunk_{path}.txt", 'w') as file:
+    with open(f"{chunks_store_path}chunk_{path}.txt", 'w') as file:
         # write a row of the csv to the file
         file.write(chunks_csv.iloc[row_index, 1])
+
+print("\nWarning: chunks_from_html.csv still contains deplicated data. Only explicitly split chunks are deduped!")
