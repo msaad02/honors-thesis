@@ -78,7 +78,7 @@ def get_text(item: tuple[str, requests.models.Response]) -> list:
     # Loop through all the strings in the BeautifulSoup object
     for string in soup.stripped_strings:
         # Consider a long text as a text having 15 or more words
-        if len(string.split()) >= 15:
+        if len(string.split()) >= 10: # NOTE July 17. Next run edit - 10 
             # Check if the string contains only alphanumeric, whitespace and custom punctuation characters
             if all(c.isalnum() or c.isspace() or c in custom_punctuation for c in string):
                 # Check if the string contains more than 3 whitespaces in a row
