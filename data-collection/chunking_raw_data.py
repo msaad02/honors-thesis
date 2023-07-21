@@ -106,27 +106,29 @@ with open(data_folder + csv_name, 'w', newline='') as f:
         writer.writerow([key, sentence])
 
 
-# Now to split up the file into chunks for langchain
-chunks_csv = pd.read_csv(data_folder + csv_name, names=['source', 'data'])
+# # Now to split up the file into chunks for langchain
+# NOTE July 20th update. Can be done with CSV. This is a waste unfortunately
 
-# Mid July discovery! I have quite a bit of duplicate data, so this clears it out.
-chunks_csv = chunks_csv[~chunks_csv['data'].duplicated(keep='first')]
-chunks_store_path = f"{data_folder}vectordb_filestore/"
+# chunks_csv = pd.read_csv(data_folder + csv_name, names=['source', 'data'])
 
-# Check if path exists, if not, make it?
-if not os.path.exists(chunks_store_path):
-    response = input(f"\n{chunks_store_path} does not exist.\nWould you like to create it (y/n)? ")
-    if response in 'yY':
-        os.mkdir(chunks_store_path)
-    else:
-        print("Path not available. Cannot save off chunks.")
-        exit(1)
+# # Mid July discovery! I have quite a bit of duplicate data, so this clears it out.
+# chunks_csv = chunks_csv[~chunks_csv['data'].duplicated(keep='first')]
+# chunks_store_path = f"{data_folder}vectordb_filestore/"
 
-for row_index in range(len(chunks_csv)):
-    # open the file with write mode
-    path = chunks_csv.iloc[row_index, 0].replace('https://www2.', '').replace('/', '_')
-    with open(f"{chunks_store_path}chunk_{path}.txt", 'w') as file:
-        # write a row of the csv to the file
-        file.write(chunks_csv.iloc[row_index, 1])
+# # Check if path exists, if not, make it?
+# if not os.path.exists(chunks_store_path):
+#     response = input(f"\n{chunks_store_path} does not exist.\nWould you like to create it (y/n)? ")
+#     if response in 'yY':
+#         os.mkdir(chunks_store_path)
+#     else:
+#         print("Path not available. Cannot save off chunks.")
+#         exit(1)
 
-print("\nWarning: chunks_from_html.csv still contains deplicated data. Only explicitly split chunks are deduped!")
+# for row_index in range(len(chunks_csv)):
+#     # open the file with write mode
+#     path = chunks_csv.iloc[row_index, 0].replace('https://www2.', '').replace('/', '_')
+#     with open(f"{chunks_store_path}chunk_{path}.txt", 'w') as file:
+#         # write a row of the csv to the file
+#         file.write(chunks_csv.iloc[row_index, 1])
+
+# print("\nWarning: chunks_from_html.csv still contains deplicated data. Only explicitly split chunks are deduped!")
