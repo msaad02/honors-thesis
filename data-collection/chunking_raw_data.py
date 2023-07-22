@@ -35,6 +35,7 @@ from tqdm import tqdm
 import csv
 import pandas as pd
 import os
+import trafilatura
 
 """
 NOTE July 15th Update: 
@@ -60,46 +61,155 @@ Dedupe complete at the bottom of this script.
 data_folder = "/home/msaad/workspace/honors-thesis/data-collection/data/"
 responses_dict = pickle.load(open(data_folder + "scraper_output.p", "rb"))
 
+# def get_text(item: tuple[str, requests.models.Response]) -> list:
+#     """
+#     Parses HTML for 'sentences', as described above.
+#     """
+#     key, response = item
+
+#     # Your BeautifulSoup object
+#     soup = BeautifulSoup(response.text, 'html.parser')
+
+#     # Create an empty list to hold the sentences
+#     long_texts = []
+
+#     # Define custom punctuation
+#     custom_punctuation = ',./?!:;$#&+*()"'
+
+#     # Loop through all the strings in the BeautifulSoup object
+#     for string in soup.stripped_strings:
+#         # Consider a long text as a text having 15 or more words
+#         if len(string.split()) >= 10: # NOTE July 17. Next run edit - 10 
+#             # Check if the string contains only alphanumeric, whitespace and custom punctuation characters
+#             if all(c.isalnum() or c.isspace() or c in custom_punctuation for c in string):
+#                 # Check if the string contains more than 3 whitespaces in a row
+#                 if not re.search(' {3,}', string):
+#                     long_texts.append(string)
+
+#     # NEW: Added so semantic search queries return bigger, more in context results.
+#     # "chunk" is a string of all the long sentences (as described above) separated by a space.
+#     chunk = " ".join(long_texts)
+    
+#     # OLD: return long_texts
+#     return key, chunk
+
 def get_text(item: tuple[str, requests.models.Response]) -> list:
     """
-    Parses HTML for 'sentences', as described above.
+    Parse HTML using trafilatura. This is much simpler than the above method, with similar results.
+
+    trafilatura is a very robust package for reading, and cleaning htmls.
     """
     key, response = item
+    html = response.text
 
-    # Your BeautifulSoup object
-    soup = BeautifulSoup(response.text, 'html.parser')
+    cleaned_html = trafilatura.extract(
+        filecontent = html, 
+        include_tables=False
+    )
 
-    # Create an empty list to hold the sentences
-    long_texts = []
+    return key, cleaned_html
 
-    # Define custom punctuation
-    custom_punctuation = ',./?!:;$#&+*()"'
+def clean_dict(responses_dict: dict[str, requests.models.Response]) -> dict[str, requests.models.Response]:
+    """
+    Indepth filtering of webpages/URLs. This is essential for semantic search especially since it will be prone to returning bad data if that's what you feed it in.
+    """
 
-    # Loop through all the strings in the BeautifulSoup object
-    for string in soup.stripped_strings:
-        # Consider a long text as a text having 15 or more words
-        if len(string.split()) >= 10: # NOTE July 17. Next run edit - 10 
-            # Check if the string contains only alphanumeric, whitespace and custom punctuation characters
-            if all(c.isalnum() or c.isspace() or c in custom_punctuation for c in string):
-                # Check if the string contains more than 3 whitespaces in a row
-                if not re.search(' {3,}', string):
-                    long_texts.append(string)
+    # Filter out to only successful requests (status code == 200)
+    res_dict = {}
+    for url, response in responses_dict.items():
+        if response.status_code == 200:
+            res_dict[url] = response
 
-    # NEW: Added so semantic search queries return bigger, more in context results.
-    # "chunk" is a string of all the long sentences (as described above) separated by a space.
-    chunk = " ".join(long_texts)
-    
-    # OLD: return long_texts
-    return key, chunk
+    urls = res_dict.keys()
+
+    ## Many of the URLs have .html on he end of it. This causes some duplication where there is a url with a .html and another without.
+    # This step filters them out, and standardizes it. If both exist, it'll remove the .html version, if only the .html version exists, it'll strip it and add it to the url list
+    html_urls = set()
+    non_html_urls = set()
+
+    for url in urls:
+        if url.endswith('.html'):
+            stripped_url = url[:-5]  # strip .html
+            html_urls.add(stripped_url)
+        else:
+            non_html_urls.add(url)
+
+    urls = set(non_html_urls | (html_urls - non_html_urls))
+
+    # Standardize the _ and - to -. Many copies of URLs with differences.
+    urls = {url.replace('_', '-') for url in urls}
+
+    # Filter length of URL?
+    # urls = {url for url in urls if url.count('/') < 6}
+
+    # Get rid of "live". Just wayyyyy too many of them, mostly professor websites.
+    bad_list = ['brockport.edu/live/', 'brockport.edu/life/', 'archive', 'transfer-credit', 'research-foundation']
+    urls = {url for url in urls if all(word not in url for word in bad_list)}
+
+
+    # Important decision!! Going to limit URL length for all non-admissions/faid webpages. Just need to filter this down more... A lot more... 
+    good_list = ['brockport.edu/admissions/', 'brockport.edu/academics/advisement/handbook']
+    new_url = set()
+    for url in urls:
+        if any(word in url for word in good_list):
+            new_url.add(url)
+        elif url.count('/') < 5:
+            new_url.add(url)
+    urls = new_url
+
+    # Make a dictionary of the URLs we've filtered it down to
+    return_dict = {}
+    for url in urls:
+        # Not great way, but a way to do this. I removed all the .html ones, but still need to access their contents in dictionary.
+        # I'll probably change this to make it cleaner in the future.
+        if url in responses_dict.keys():
+            return_dict[url] = responses_dict[url]
+        else:
+            # remember back when I changed all _ to -? Yeah... Need to wrap in try catch and see how this goes
+
+            # NOTE This is kindof like a practice question. Figured chatgpt could do it, and sure enough, it could. Here is the prompt to understand what's going on:
+            # ------
+            # if i have a python string "a-b-c-d-e-f", write me a loop that will loop over ever permutation of _ being replaced for -. 
+            # For example, "a-b-c_d_e-f", "a-b_c-d_e_f" will all be tested. I want to print every single permutation. Use code interpreter to verify your answer
+            # ------
+            # I just applied its answer here
+
+            n = url.count('-')  # Number of "-" in the string
+
+            # Loop over all binary numbers with 'n' bits
+            for i in range(2**n):
+                # Convert the number to binary and pad it with zeros on the left to get 'n' bits
+                binary = format(i, f'0{n}b')
+                
+                # Replace "-" with "_" in the string according to the binary number
+                new_url = url
+                for j in range(n):
+                    if binary[j] == '1':
+                        new_url = new_url.replace('-', '_', 1)
+                    else:
+                        new_url = new_url.replace('-', '-', 1)
+                        
+                try:
+                    return_dict[url] = responses_dict[url+'.html']
+                except:
+                    continue
+
+    return return_dict
+
+
+# Apply function to responses_dict
+responses_dict = clean_dict(responses_dict)
+
+# NOTE: Might want to consider saving off this dictionary to use in other parts of this project...
+
 
 print("Begin fetching all the sentences...")
-# Maps get_text over the dictionary to generate a list of key/chunk pairs. 
-# Filers out the empty ones, and saves to `all_sentences`
+# Maps get_text over the dictionary to generate a list of key/chunk pairs.
 all_sentences = list(filter(lambda x: x[1] != '', map(get_text, tqdm(responses_dict.items()))))
 print(f"Saving off {len(all_sentences)} sentences.")
 
 # Save off to a csv file
-csv_name = "chunks_from_html.csv"
+csv_name = "clean_chunks_from_html.csv"
 with open(data_folder + csv_name, 'w', newline='') as f:
     writer = csv.writer(f)
     for key, sentence in all_sentences:
