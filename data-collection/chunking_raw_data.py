@@ -212,6 +212,7 @@ print(f"Saving off {len(all_sentences)} sentences.")
 csv_name = "clean_chunks_from_html.csv"
 with open(data_folder + csv_name, 'w', newline='') as f:
     writer = csv.writer(f)
+    writer.writerow(['url', 'data'])
     for key, sentence in all_sentences:
         writer.writerow([key, sentence])
 
