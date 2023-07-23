@@ -156,12 +156,11 @@ def recursive_scrape(webpage: str, depth: int) -> dict:
 
     return data
 
-# Using the scraper ------------------------------------------------------
+# Using the Scraper ------------------------------------------------------
 # Refer to README to get expectations for time spent scraping the website.
 
 # I've chosen a depth of 5, which should cover the majority of webpages on the website. 
 # For future runs, I may up that number. A depth of 6 should add roughly an additional 1000 webpages.
-
 
 data = recursive_scrape("https://www2.brockport.edu", 5)
 
