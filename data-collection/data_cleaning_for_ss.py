@@ -19,14 +19,10 @@ This script is specifically tailored for a particular set of web content, and mo
 be necessary for use with other data.
 """
 
-from bs4 import BeautifulSoup
 import pickle
-import re
 import requests
 from tqdm import tqdm
 import csv
-import pandas as pd
-import os
 import trafilatura
 
 data_folder = "/home/msaad/workspace/honors-thesis/data-collection/data/"
