@@ -102,7 +102,7 @@ def clean_dict(
     urls = {url for url in urls if all(word not in url for word in bad_list)}
 
     # --------------------------------------------------------------------------------
-    # NOTE: By this point, the dataset is still wayy too big. Primarily these step from each
+    # NOTE: By this point, the dataset is still wayy too big. Primarily this is from each
     # departments information. For example, computer science has like 20-50 webpages.
     # This trend follows for other majors. So in this next step I am limiting the URL
     # length, as denoted by the number of /'s in the URL. 5 is selected since it allows
