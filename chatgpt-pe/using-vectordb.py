@@ -22,7 +22,7 @@ retreiver = Chroma(
 #     retriever=retreiver
 # )
 
-vectordbkwargs = {"search_distance": 0.9}
+#vectordbkwargs = {"search_distance": 0.9}
 # retreiver.search_kwargs = 
 
 memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
@@ -48,6 +48,6 @@ while True:
     question = input("\n>>> ")
 
     # result = qa.run(question)
-    result = qa({"question": question, "chat_history": chat_history, "vectordbkwargs": vectordbkwargs})
+    result = qa({"question": question, "chat_history": chat_history}) #"vectordbkwargs": vectordbkwargs
 
     print(result['answer'])
