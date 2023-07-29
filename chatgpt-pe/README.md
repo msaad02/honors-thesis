@@ -10,3 +10,8 @@ In this implementation we use semantic search via operand.ai. With operand, we a
 # IDEA:
 
 Could do a keyword search or just an additional layer of semantic search to filter down into a category, where you could them semantic search text exclusive to that category. Things get messy when adding a ton of webpages to 1 search, this could allow for a much cleaner implementation that returns better results
+
+
+# IDEA:
+
+Semantic search the question database instead of the raw html text.

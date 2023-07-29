@@ -2,3 +2,8 @@
 
 # tensorboard logs
 outputs
+
+# checkpoints and such
+results
+
+wandb
