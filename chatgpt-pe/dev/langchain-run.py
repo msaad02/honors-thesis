@@ -1,4 +1,3 @@
-
 from langchain.vectorstores import Chroma
 from langchain.llms import OpenAI
 from langchain.embeddings import OpenAIEmbeddings
