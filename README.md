@@ -65,7 +65,12 @@ The following technologies were used in the three distinct methodologies impleme
 
 ## Installation / Usage
 
-TBD?
+### Install torch
+For CPU-version. For GPU, see https://pytorch.org/get-started/locally/
+> pip install torch torchvision torchaudio
+
+### Install requirements
+> pip install -r requirements.txt
 
 ## Testing
 

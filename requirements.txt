@@ -4,3 +4,7 @@ openai
 langchain
 chromadb
 trafilatura
+transformers
+datasets
+peft
+tensorboard
