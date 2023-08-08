@@ -8,3 +8,5 @@ transformers
 datasets
 peft
 tensorboard
+trl
+tiktoken

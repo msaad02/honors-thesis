@@ -8,7 +8,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.document_loaders.csv_loader import CSVLoader
 
-data_path = "/home/msaad/workspace/honors-thesis/data-collection/data/clean_chunks_from_html.csv"
+data_path = "/home/msaad/workspace/honors-thesis/data-collection/data/cleaned_data.csv"
 vectordb_persist_dir = "/home/msaad/workspace/honors-thesis/data-collection/data/chroma_persist_dir"
 
 # Load in data
