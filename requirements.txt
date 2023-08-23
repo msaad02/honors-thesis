@@ -14,3 +14,5 @@ InstructorEmbedding
 sentence_transformers
 bitsandbytes
 wandb
+xformers
+ctransformers

@@ -19,6 +19,18 @@ python test-sft_llama2.py \
 - max_steps: Short for now, just to test.
 - packing: Not sure what packing does...
 
+# Quantizing the model from huggingface
+
+See llama.cpp for installation instructions.
+https://github.com/ggerganov/llama.cpp/tree/master
+
+Navigate to the examples folder (breaks otherwise, according to docs) in llama.cpp then execute the following command.
+
+```bash
+$ python make-ggml.py --model msaad02/llama2_7b_brockport_gpt --outname llama2_brockport_ggml --outdir /home/msaad/workspace/honors-thesis/fine-tuning/models --quants Q4_K_M
+```
+
+
 
 # IMPORTANT ABOUT ACCELERATE
 
