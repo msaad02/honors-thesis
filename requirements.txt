@@ -12,3 +12,5 @@ trl
 tiktoken
 InstructorEmbedding
 sentence_transformers
+bitsandbytes
+wandb
