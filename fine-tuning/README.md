@@ -16,7 +16,7 @@ python test-sft_llama2.py \
 --max_steps 10
 ```
 
-- max_steps: Short for now, just to test.
+- max_steps: Short for now, just to test. -- it still did 500 steps? Odd...
 - packing: Not sure what packing does...
 
 # Quantizing the model from huggingface
