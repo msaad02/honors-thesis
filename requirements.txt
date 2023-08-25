@@ -16,5 +16,4 @@ bitsandbytes
 wandb
 xformers
 ctransformers[gptq] # for exllama support
-llama-cpp-python
 auto-gptq
