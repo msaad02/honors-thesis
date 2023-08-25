@@ -1,3 +1,9 @@
+"""
+THIS ENTIRE SCRIPT IS TAKEN FROM HERE: https://gist.github.com/TheBloke/b47c50a70dd4fe653f64a12928286682
+
+See fine-tuning/README.md for usage instructions.
+"""
+
 import time
 import os
 import logging
