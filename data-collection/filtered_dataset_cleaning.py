@@ -178,12 +178,13 @@ def clean_dict(
 
     return return_dict
 
+## Begin cleaning AND filtering
 
-# Apply cleaning to responses_dict
+# Apply filtering to responses_dict
 cleaned_dict = clean_dict(responses_dict)
 
 # NOTE: Saving off cleaned dictionary for other places in project
-pickle.dump(cleaned_dict, open('/home/msaad/workspace/honors-thesis/data-collection/data/cleaned_url_response_dict.p', 'wb'))
+pickle.dump(cleaned_dict, open('/home/msaad/workspace/honors-thesis/data-collection/data/filtered_url_response_dict.p', 'wb'))
 
 print("Begin fetching cleaned data...")
 # Get cleaned version of html for all data. Wrap in tqdm for progress bar.
@@ -192,9 +193,11 @@ data = list(filter(lambda x: x[1] != '', map(get_text, tqdm(cleaned_dict.items()
 print(f"Saving off {len(data)} webpages. Dataset is now {round(len(data)/len(responses_dict)*100, 2)}% of its original size.")
 
 # Save off to a csv file
-csv_name = "cleaned_data.csv"
+csv_name = "filtered_cleaned_data.csv"
 with open(data_folder + csv_name, 'w', newline='') as f:
     writer = csv.writer(f)
     writer.writerow(['url', 'data']) # Column names
     for key, sentence in data:
         writer.writerow([key, sentence])
+
+print("\nDone!")
