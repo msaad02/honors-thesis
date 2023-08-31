@@ -87,7 +87,6 @@ df = df[df.apply(lambda row: remove_excess_profile_stuff(row['url'], row['data']
 # Filter out data with little data (< 275 characters)
 df = df[df['data'].str.len() > 275]
 
-
 # Sort by data then standardize and drop duplicate URLs
 df.index = df['data'].str.len()
 df = df.sort_index(ascending=False).reset_index(drop=True)
@@ -104,9 +103,11 @@ df = df.drop_duplicates(subset=['url'])
 df = df.sort_values(by=['url'])
 
 # Drop rows where the URL contains any of the strings in the list
-strings_to_remove = ['/transfer-credit/planning-guide/', '/archive/', '/archives/']
-df = df[~df['url'].str.contains('|'.join(strings_to_remove))]
+strings_to_remove = ['/transfer.credit/planning.guide', '/archive/', '/archives/', 'edu/go', 'edu/info', 'edu/quick.links', '/advancement.communications']
+df = df[~df['url'].str.contains('|'.join(strings_to_remove), regex=True)]
 
+# Get rid of base website.
+df = df[df['url'] != "https://www2.brockport.edu"]
 
 print(f"Saving off full, cleaned dataset of {len(df)} webpages.")
 
