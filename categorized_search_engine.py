@@ -4,7 +4,17 @@ import openai
 import json
 from colorama import init as colorama_init
 from colorama import Fore, Style
+import torch # to check for GPU support
 colorama_init()
+
+# For GPT answers
+QA_OR_PICK_MAX_TOKENS = 256
+QA_OR_PICK_TEMPERATURE = 0.8
+
+# For GPT categorization
+CATEGORIZATION_MAX_TOKENS = 10
+CATEGORIZATION_TEMPERATURE = 0
+
 
 # Base CHROMADB categorized data dirs
 base_categorized_chroma_path = "/home/msaad/workspace/honors-thesis/data-collection/data/categorized_datastore/chroma_data/"
@@ -16,7 +26,7 @@ with open("/home/msaad/workspace/honors-thesis/data-collection/data/categorized_
 # Load semantic search model
 model = HuggingFaceBgeEmbeddings(
     model_name = "BAAI/bge-small-en",
-    model_kwargs = {'device': 'cuda'},
+    model_kwargs = {'device': 'cuda'} if torch.cuda.is_available() else {'device': 'cpu'},
     encode_kwargs = {'normalize_embeddings': True} # set True to compute cosine similarity
 )
 
@@ -112,7 +122,8 @@ def answer_question_with_categorization(question: str) -> str:
     first_category, price = query_gpt(
         system=initial_categorization_system, 
         prompt=initial_categorization_prompt,
-        temperature=0,
+        temperature=CATEGORIZATION_TEMPERATURE,
+        max_tokens=CATEGORIZATION_MAX_TOKENS,
         price=price
     )
 
@@ -134,48 +145,109 @@ def answer_question_with_categorization(question: str) -> str:
 
     # FINISHED FIRST PROMPT/INITIAL CATEGORIZATION
 
+    # This is a checker for if there are not enough search results, and we need to force a new category (if one available)
+    non_category_keys = [url for url in subcategory_keys if url.startswith("http")]
+
+    if len(non_category_keys) == 0:
+        # Check if subcategories available or not:
+        if len(subcategories) == 0:
+            print(f"\n{Fore.RED}ERROR: NOT ENOUGH SEARCH RESULTS. NO SUBCATEGORIES AVAILABLE.")
+            print(f"\n{Fore.CYAN}FINAL PRICE: {Style.RESET_ALL}${round(price, 6)}\n\n")
+            return "error"
+
+        # Force pick subcategory if only one available and move to final step
+        elif len(subcategories) == 1:
+            print(f"\n{Fore.RED}WARNING: NOT ENOUGH SEARCH RESULTS. ONLY ONE SUBCATEGORY AVAILABLE. FORCE PICKING SUBCATEGORY.")
+
+            subcategory_or_answer = subcategories[0]
+
+            # Manually picked categorization, so no need to query GPT
+            query_gpt_response = False
+
+        # Query with no data available, only categories listed to GPT
+        elif len(subcategories) > 1:
+            print(f"\n{Fore.RED}WARNING: NOT ENOUGH SEARCH RESULTS. FORCE PICK SUBCATEGORY.")
+
+            subcategory_system = "You are a helpful assistant. Given a question and set of categories, you will choose the most relevant category for the question."
+            subcategory_prompt = f"""\
+            The question is:
+            {question}
+
+            The following subcategories available are:
+            {print_pretty_subcategories}
+
+            Respond ONLY with the name of the chosen category. (i.e. "live", "academics", etc.)."""
+
+            # Should respond with subcategory. NOT an answer.
+            subcategory_temperature = CATEGORIZATION_TEMPERATURE
+            subcategory_max_tokens = CATEGORIZATION_MAX_TOKENS
+            query_gpt_response = True
+
+    # Has data available, so continue normally.
+    else:
+
+        if len(subcategories) == 0:
+            print(f"\n{Fore.RED}WARNING: NO SUBCATEGORIES AVAILABLE.")
+            
+            subcategory_system = "You are a helpful assistant. Given a context and a question, if possible, you will answer the question."
+            subcategory_prompt = f"""\
+            The question is:
+            {question}
+
+            If the answer is available in the following information, answer the question. If not, refuse to answer the question.
+
+            The information is:
+            {print_pretty_vector_search_results}"""
+
+            #### BEGIN LOGIC AFTER SECOND PROMPT
 
 
+            subcategory_temperature = QA_OR_PICK_TEMPERATURE
+            subcategory_max_tokens = QA_OR_PICK_MAX_TOKENS
+            query_gpt_response = True
 
 
+        else:
 
-    ###############################################################
-    # SECOND PROMPT/SUBCATEGORIZATION
+            subcategory_system = "You are a helpful assistant. Given a context and a question, you will either answer the question, or choose the most relevant category for the question."
+            subcategory_prompt = f"""\
+            The question is:
+            {question}
 
-    subcategory_system = "You are a helpful assistant. Given a context and a question, you will either answer the question, or choose the most relevant category for the question."
-    subcategory_prompt = f"""\
-    The question is:
-    {question}
+            If the answer is available in the following data, answer the question. If not, choose one of the following subcategories.
+            The decision is yours whether to search more, or take your current information.
 
-    If the answer is available in the following data, answer the question. If not, choose one of the following subcategories.
-    The decision is yours whether to search more, or take your current information.
+            The current information is:
+            {print_pretty_vector_search_results}
 
-    The current information is:
-    {print_pretty_vector_search_results}
+            The following subcategories available are:
+            {print_pretty_subcategories}
 
-    The following subcategories available are:
-    {print_pretty_subcategories}
+            If you choose a subcategory, respond ONLY with the name of that category. (i.e. "live", "academics", etc.)."""
 
-    If you choose a subcategory, respond ONLY with the name of that category. (i.e. "live", "academics", etc.)."""
+            subcategory_temperature = QA_OR_PICK_TEMPERATURE
+            subcategory_max_tokens = QA_OR_PICK_MAX_TOKENS
+            query_gpt_response = True
 
-    #### BEGIN LOGIC AFTER SECOND PROMPT
+    if query_gpt_response:
+        subcategory_or_answer, price = query_gpt(
+            system=subcategory_system, 
+            prompt=subcategory_prompt,
+            temperature=subcategory_temperature,
+            max_tokens=subcategory_max_tokens,
+            price=price
+        )
 
-    subcategory_or_answer, price = query_gpt(
-        system=subcategory_system, 
-        prompt=subcategory_prompt,
-        temperature=0.8,
-        max_tokens=100, # ARBITRARY. Need to up incase it wants to answer the question.
-        price=price
-    )
-
+    # Naive way of checking if GPT chose a category or gave an answer
     if ' ' in subcategory_or_answer:
         answer = subcategory_or_answer
         print(f"\n{Fore.RED}BREAKOUT ANSWER: \n{Style.RESET_ALL}{answer}")
         print(f"\n{Fore.CYAN}FINAL PRICE: {Style.RESET_ALL}${round(price, 6)}\n\n")
         return answer
+    
+    # Continues pass this point only if GPT chose a category
 
-    print(f"\n{Fore.GREEN}SUBCATEGORY (hopefully not an answer): {Style.RESET_ALL}{subcategory_or_answer}")
-    # Continues if it is a subcategory
+    print(f"\n{Fore.GREEN}SUBCATEGORY: {Style.RESET_ALL}{subcategory_or_answer}")
 
     path_to_final_category = f"{path_to_first_category}{subcategory_or_answer}"
 
@@ -207,8 +279,8 @@ def answer_question_with_categorization(question: str) -> str:
     answer, price = query_gpt(
         system=final_system, 
         prompt=final_prompt,
-        temperature=0.8,
-        max_tokens=256, # ARBITRARY. Need to up incase it wants to answer the question.
+        temperature=QA_OR_PICK_TEMPERATURE,
+        max_tokens=QA_OR_PICK_MAX_TOKENS, # ARBITRARY. Need to up incase it wants to answer the question.
         price=price
     )
 
