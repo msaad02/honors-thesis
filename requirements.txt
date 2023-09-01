@@ -17,3 +17,4 @@ wandb
 xformers
 ctransformers[gptq] # for exllama support
 auto-gptq
+colorama
