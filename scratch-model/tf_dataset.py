@@ -22,46 +22,6 @@ def split_input_output(s):
     input_split = output_split[0].split('### Instruction:\n')[1]
     return input_split, output_split[1]
 
-# Map above function over the list of questions, and create a list of questions and answers separately
-context_raw, target_raw = [list(t) for t in zip(*[split_input_output(string) for string in dataset])]
-
-# NOTE: Chosing to follow the naming conventions from the tutorial, for reference then:
-# CONTEXT refers to QUESTIONS, and TARGET refers to ANSWERS
-
-# "Raw" is used since currently the data is in string format, and needs to be standardized and vectorized
-
-BUFFER_SIZE = len(context_raw)
-BATCH_SIZE = 64
-
-is_train_mask = np.random.uniform(size=(len(target_raw),)) < 0.8
-
-train_context = np.array(context_raw)[is_train_mask]
-train_target = np.array(target_raw)[is_train_mask]
-
-val_context = np.array(context_raw)[~is_train_mask]
-val_target = np.array(target_raw)[~is_train_mask]
-
-train_raw = (
-    tf.data.Dataset
-    .from_tensor_slices((train_context, train_target))
-    .shuffle(BUFFER_SIZE)
-    .batch(BATCH_SIZE)
-)
-
-val_raw = (
-    tf.data.Dataset
-    .from_tensor_slices((val_context, val_target))
-    .shuffle(BUFFER_SIZE)
-    .batch(BATCH_SIZE)
-)
-
-# Check to see it worked
-# for example_context_strings, example_target_strings in train_raw.take(1):
-#     print(example_context_strings[:5])
-#     print()
-#     print(example_target_strings[:5])
-#     break
-
 def tf_lower_and_split_punct(text):
     """
     Text standardization function. Tries to make things uniform.
@@ -74,29 +34,61 @@ def tf_lower_and_split_punct(text):
     text = tf.strings.join(['[START]', text, '[END]'], separator=' ') # Add start and end token
     return text
 
-MAX_VOCAB_SIZE = 5000
-
-text_processor = tf.keras.layers.TextVectorization(
-    standardize=tf_lower_and_split_punct,
-    max_tokens=MAX_VOCAB_SIZE,
-    ragged=True
-)
-
-text_processor.adapt(train_raw.map(lambda context, target: context))
-text_processor.adapt(train_raw.map(lambda context, target: target))
-
-def process_text(context, target):
-    context = text_processor(context).to_tensor()
-    target  = text_processor(target)
-    targ_in = target[:,:-1].to_tensor()
-    targ_out = target[:,1:].to_tensor()
-    return (context, targ_in), targ_out
-
-train_ds = train_raw.map(process_text, tf.data.AUTOTUNE)
-val_ds = val_raw.map(process_text, tf.data.AUTOTUNE)
-
-def get_datasets():
+def get_datasets(batch_size: int = 64):
     """
     Return train_ds, val_ds, and text_processor
     """
+    # Map above function over the list of questions, and create a list of questions and answers separately
+    context_raw, target_raw = [list(t) for t in zip(*[split_input_output(string) for string in dataset])]
+
+    # NOTE: Chosing to follow the naming conventions from the tutorial, for reference then:
+    # CONTEXT refers to QUESTIONS, and TARGET refers to ANSWERS
+
+    # "Raw" is used since currently the data is in string format, and needs to be standardized and vectorized
+
+    BUFFER_SIZE = len(context_raw)
+    BATCH_SIZE = batch_size
+
+    is_train_mask = np.random.uniform(size=(len(target_raw),)) < 0.8
+
+    train_context = np.array(context_raw)[is_train_mask]
+    train_target = np.array(target_raw)[is_train_mask]
+
+    val_context = np.array(context_raw)[~is_train_mask]
+    val_target = np.array(target_raw)[~is_train_mask]
+
+    train_raw = (
+        tf.data.Dataset
+        .from_tensor_slices((train_context, train_target))
+        .shuffle(BUFFER_SIZE)
+        .batch(BATCH_SIZE)
+    )
+    val_raw = (
+        tf.data.Dataset
+        .from_tensor_slices((val_context, val_target))
+        .shuffle(BUFFER_SIZE)
+        .batch(BATCH_SIZE)
+    )
+
+    MAX_VOCAB_SIZE = 5000
+
+    text_processor = tf.keras.layers.TextVectorization(
+        standardize=tf_lower_and_split_punct,
+        max_tokens=MAX_VOCAB_SIZE,
+        ragged=True
+    )
+
+    text_processor.adapt(train_raw.map(lambda context, target: context))
+    text_processor.adapt(train_raw.map(lambda context, target: target))
+
+    def process_text(context, target):
+        context = text_processor(context).to_tensor()
+        target  = text_processor(target)
+        targ_in = target[:,:-1].to_tensor()
+        targ_out = target[:,1:].to_tensor()
+        return (context, targ_in), targ_out
+
+    train_ds = train_raw.map(process_text, tf.data.AUTOTUNE)
+    val_ds = val_raw.map(process_text, tf.data.AUTOTUNE)
+
     return train_ds, val_ds, text_processor

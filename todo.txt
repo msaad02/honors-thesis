@@ -1,8 +1,6 @@
-- write documentation on how to run stuff?
-    - atleast requirements.txt (for myself and just so it's there)
-        - requirements.txt for parts specifically or for entire thesis?
-
-
-- finetuning
-- redo semantic search. Experiment with local semantic search?
-- scratch model
+- cleanup daa-collection folder
+- scratch model get-config for custom learning rate + make it bigger and 'fully' train
+- make rnn?
+- figure out how to push standard tensorflow models to huggingface hub
+- full finetuning
+- finish categorized search engine and cleanup
