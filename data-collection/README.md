@@ -1,19 +1,18 @@
 # Data Collection
 
-This step is crucial and will ultimately decide the success, or failure of this project. Despite the increasigly sophisticated language models of our day, when it comes to machine learning there is only 1 fundamental rule: Garbage in, garbage out. For this reason, the data collected and ultimately generated for this project needs to be contextually relevant, and deliver good examples for the models to use from the perspective of prospective students, current students, and faculty alike.
+This step is crucial and will ultimately decide the success, or failure of this project. Despite the increasigly sophisticated language models of our day, when it comes to AI and machine learning there is one rule above the rest:  Garbage in, garbage out. For this reason, the data collected and ultimately generated for this project needs to be contextually relevant, and deliver good examples for the models to use from the perspective of prospective students, current students, and faculty alike.
 
-The primary source of data at our disposal comes directly from the SUNY Brockport website (https://www2.brockport.edu). It may be possible, if necessary, to request more information from the relevant people, however for the first iteration of data generation I suspect we have enough.
-
-### **First iteration:**
+The primary source of data at our disposal comes directly from the SUNY Brockport website (https://www2.brockport.edu). It may be possible, if necessary, to request more information from the relevant people, but this shuld be adequate. 
 
 ---
 ## Scraping Brockport Website
 
-Using data from the website requires us to scrape the site. I've implemented a version of this in [brockport-scraping.ipynb](brockport-scraping.ipynb). In that file, data is collected recursively. From some set of links (or one, in my case, the [SUNY Brockport Homepage](https://www2.brockport.edu/)) all their webpages are retreived. From there I collect all the links on each of those webpages, and apply a set of filters. Most importantly, these filters include: obeying robots.txt, deduplication, and checking against the webpages already gathered (a webpage should not be searched twice), and some Brockport specific filters. Once that is all complete, we feed those links back in to the original function - hence the recursion. Also, importantly, there is a 1-3 second delay between calls to each webpage. This is done to respect the usability of the website for others. See the image below for a visual:
+Using data from the website requires us to scrape the site. I've implemented a version of this in [brockport_scraping.py](./brockport_scraping.py). In that file, data is collected recursively. From some set of links (or one, in my case, the [SUNY Brockport Homepage](https://www2.brockport.edu/)) all their webpages are retreived. From there I collect all the links on each of those webpages, and apply a set of filters. Most importantly, these filters include: obeying robots.txt, deduplication, and checking against the webpages already gathered (a webpage should not be searched twice), and some Brockport specific filters. Once that is all complete, we feed those links back in to the original function - hence the recursion. Also, importantly, there is a 1-3 second delay between calls to each webpage. This is done to respect the usability of the website for others. See the image below for a visual:
 
+### **Should probably update this to make it better**
 ![Data Generation Process](https://i.ibb.co/KjnySP1/cycle-white.png)
 
-Since this happens recursively after each loop there should be more links (until we've depleted them all). For increasigly high depths then we should approach the true number of webpages on the Brockport website. 
+Since this happens recursively after each loop there should be more links (until we've depleted them all). For increasigly high depths then we should approach the true number of webpages on the Brockport website.
 
 On my first iteration of this, the number of webpages per 1 depth is as follows (originating from [SUNY Brockport Homepage](https://www2.brockport.edu/)):
 
@@ -25,10 +24,31 @@ On my first iteration of this, the number of webpages per 1 depth is as follows 
 | 4     | ~2500                      | ~2 hours             |
 | 5     | ~2500                      | ~2 hours             |
 
+In this case, I only went up to a depth of 5 since that covered the majority of the website, and all of what I was interested in. In total, there were 5413 webpages scraped. Higher depths would have given more data, but was overwhelmingly professor websites and other things I'm not interested in for this project.
+
+---
+## Data Cleaning
+
+After scraping the website initially it quickly became clear that there was work to be done cleaning it. For one, the raw HTML files themselves do not help with either of finetuning or retreival augmented generation (RAG). But also there was quite a bit of duplication in the dataset from single webpages having multiple URLs pointing to it.
+
+The full cleaning process and details are in [full_dataset_cleaning.py](./full_dataset_cleaning.py), but at a high level, these are the steps taken to clean the dataset (in order):
+
+- Remove failed webpage retreivals (error 404s, etc.)
+- Use [trafilatura](https://trafilatura.readthedocs.io/en/latest/) to parse the HTMLs for data
+- Deduplicate dataset by data portion
+- Parse all data in www2.brockport.edu/live/.../... and filter to only school policies
+- Filter out webpages with little data (<275 characters)
+- Standardize URLs by changing _ to - and getting rid of suffix's
+- Deduplicate URLs after standardization
+- Remove specific webpages I decided are bad
+- Save cleaned data to CSV
+
+This cleaning process about half of the webpages in the dataset, reducing its size from 5413 to 2577 webpages. 
+
 ---
 ## Convert to QA Dataset Using GPT3.5 (ChatGPT)
 
-In this implementation, after this step, we will have the raw HTML contents of a grand majority of webpages on the Brockport website. From here we need to convert this into question/answer format to eventually fine tune some undetermined LLM. Additionally, for the scratch model, this data will be used to try and train it to begin with (though with more, probably). 
+After all the initial data collection, we will have the raw HTML contents of a grand majority of webpages on the Brockport website. From here we need to convert this into question/answer format to eventually fine tune some undetermined LLM. Additionally, for the scratch model, this data will be used to try and train it to begin with (though with more, probably). 
 
 As of June 2023, one common way to change this raw data into more usable data is with GPT3.5 (chatGPT). By leveraging the OpenAI API this process can be made possible at scale. In this implementation, and on this first iteration, I have about 5600 webpages from the SUNY Brockport website. This makes using a tool like GPT3.5 both beneficial and necessary. 
 

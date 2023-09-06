@@ -75,6 +75,9 @@ def remove_excess_profile_stuff(url: str, data: str) -> bool:
     only useful part of it is the policy information. This function returns TRUE if the url
     is either NOT a part of /live/profile, OR if it is a part of /live/profile, but contains
     "Policy Statement\n" in the data column. Otherwise, it returns False.
+
+    Why? /live/ is dominantly professor webpages that I don't want cluttering this dataset. 
+    There are over 1000 of them, and the grand majority are just names and pictures, no additional information. 
     """
     if url.startswith("https://www2.brockport.edu/live/"):
         return data.startswith("Policy Statement\n")
@@ -88,6 +91,7 @@ df = df[df.apply(lambda row: remove_excess_profile_stuff(row['url'], row['data']
 df = df[df['data'].str.len() > 275]
 
 # Sort by data then standardize and drop duplicate URLs
+# (This makes it so we prefer more data when deduping URLs)
 df.index = df['data'].str.len()
 df = df.sort_index(ascending=False).reset_index(drop=True)
 
