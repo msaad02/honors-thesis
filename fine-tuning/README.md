@@ -1,6 +1,6 @@
 # Fine-tuning
 
-This folder contains all the code for fine-tuning the model, using the same environemnt as the data/RAG (global requirements.txt). All the code in this folder is designed to be separate from the rest of the codebase for reusability purposes - this is mainly enabled by uploading the dataset to huggingface, and also uploading the models to huggingface.
+This folder contains all the code for fine-tuning the model, using the same environemnt as the data/RAG (global [requirements.txt](../requirements.txt). All the code in this folder is designed to be separate from the rest of the codebase for reusability purposes - this is mainly enabled by uploading the dataset to huggingface, and also uploading the models to huggingface.
 
 Aside from the code though. What is the idea for fine-tuning? Well, as we know well, language models like LLaMA 2, which is what I've chosen to use here, have a strong tendancy to hallucinate -- especially on topics it may not be familiar with (like SUNY Brockport questions, for instance). Finetuning aims to address this gap in its knowledge by further training the model our QA dataset (generated in ../data-collection). Hopefully, by doing this, we can get a model that is more familiar with the domain of SUNY Brockport, and provide better answers to any questions it gets.
 
@@ -13,7 +13,7 @@ This is an incredible blog post about everything fine-tuning related. https://re
 After setting up the environment, you can run the following command to finetune the model using the dataset available on huggingface (see [script to push it to hub](../data-collection/upload_to_huggingface.py))
 
 ```bash
-python finetune_llama.py \
+$ python finetune_llama.py \
 --dataset_name msaad02/formatted-ss-cleaned-brockport-qa \
 --subset data/ \
 --streaming False \
@@ -36,7 +36,11 @@ https://github.com/ggerganov/llama.cpp/tree/master
 Navigate to the examples folder (breaks otherwise, according to docs) in llama.cpp then execute the following command.
 
 ```bash
-$ python make-ggml.py --model msaad02/llama2_7b_brockport_gpt --outname llama2_brockport_ggml --outdir /home/msaad/workspace/honors-thesis/fine-tuning/models --quants Q4_K_M
+$ python make-ggml.py \
+--model msaad02/llama2_7b_brockport_gpt \
+--outname llama2_brockport_ggml \
+--outdir /home/msaad/workspace/honors-thesis/fine-tuning/models \
+--quants Q4_K_M
 ```
 
 ## GPTQ
