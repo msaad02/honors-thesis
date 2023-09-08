@@ -46,11 +46,16 @@ The full cleaning process and details are in [full_dataset_cleaning.py](./full_d
 This cleaning process about half of the webpages in the dataset, reducing its size from 5413 to 2577 webpages. 
 
 ---
+## Categorize Dataset by URL
+
+After cleaning the dataset, I wanted to categorize the webpages by their URL. This is because I wanted to be able to filter the dataset by URL, and also because I wanted to be able to generate data from specific topics. For example, I wanted to be able to generate data from only the financial aid webpages, or only the admissions webpages. This is done in [categorize_urls.py](./categorize_urls.py), and afterwards is only used in [categorized_engine_setup.py](../chatgpt-pe/categorized_engine_setup.py) to improve the search engine.
+
+---
 ## Convert to QA Dataset Using GPT3.5 (ChatGPT)
 
 After all the initial data collection, we will have the raw HTML contents of a grand majority of webpages on the Brockport website. From here we need to convert this into question/answer format to eventually fine tune some undetermined LLM. Additionally, for the scratch model, this data will be used to try and train it to begin with (though with more, probably). 
 
-As of June 2023, one common way to change this raw data into more usable data is with GPT3.5 (chatGPT). By leveraging the OpenAI API this process can be made possible at scale. In this implementation, and on this first iteration, I have about 5600 webpages from the SUNY Brockport website. This makes using a tool like GPT3.5 both beneficial and necessary. 
+As of June 2023, one common way to change this raw data into more usable data is with GPT3.5 (chatGPT). By leveraging the OpenAI API this process can be made possible at scale. In this implementation, I have about 5600 webpages from the SUNY Brockport website. This makes using a tool like GPT3.5 both beneficial and necessary. 
 
 Processes like this have been done similarly with other models, such as [Stanfords Alpaca](https://github.com/tatsu-lab/stanford_alpaca). It and similar models have taken GPT3.x outputs to fine tune models like [Metas LLaMA](https://github.com/facebookresearch/llama), which demonstrates this idea is proven to work.
 
@@ -65,17 +70,14 @@ At depth 5, and originating from the [SUNY Brockport Homepage](https://www2.broc
 [
     ...,{
         "instruction": "What is the cost of a double room for the Fall 2023 semester?",
-        "input": "",
         "output": "The cost of a double room for the Fall 2023 semester is $4,765."
     },
     {
         "instruction": "How can I visit SUNY Brockport?",
-        "input": "",
         "output": "You can visit SUNY Brockport through a map or take a virtual tour on their website."
     },
     {
         "instruction": "Where can I find the faculty and staff directory?",
-        "input": "",
         "output": "The faculty and staff directory can be found on the college website."
     },...
 ]
@@ -89,3 +91,7 @@ According to the OpenAI website, this dataset accounts for ~13,000,000 tokens be
 Whether or not this is the best way to attack this problem needs more testing. It is very possible - frankly, very likely - that using this method will make the data generated highly specific since there are an abundance of webpages that not many people use. Professor webpages for instance, many of which are almost completely blank, do account for a somewhat significant portion of the data. More exploration could be done here, and for the future we might consider filtering the dataset down to only questions generated from specific topics. Maybe admissions and financial aid questions, for example. This is all pendent on the models generated from this dataset though, and needs considerabely more testing to know further.
 
 Considering this possibility however, I've made sure to save checkpoints throughout this code which specifically include URLs and their data. The first is the URL/HTML dictionary, and the second is a URL/GPT_question dictionary (neither available on GitHub, they are fairly large). If needed then, it will be possible to filter URLs to more important topics without regenerating the data from scratch.
+
+#### September 2023 Update
+
+It appears that through the dilligent cleaning steps taken this dataset seems to be pretty good.

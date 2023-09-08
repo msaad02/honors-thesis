@@ -1,3 +1,11 @@
+"""
+THIS SCRIPT IS FROM HERE: 
+
+https://github.com/huggingface/trl/blob/main/examples/research_projects/stack_llama_2/scripts/sft_llama2.py
+
+I have modified it *slightly* to work with my dataset. Namely, function `prepare_sample_text` is changed.
+"""
+
 # Fine-Tune Llama2-7b on SE paired dataset
 import os
 from dataclasses import dataclass, field
