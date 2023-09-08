@@ -1,6 +1,6 @@
 # Fine-tuning
 
-This folder contains all the code for fine-tuning the model, using the same environemnt as the data/RAG (global [requirements.txt](../requirements.txt). All the code in this folder is designed to be separate from the rest of the codebase for reusability purposes - this is mainly enabled by uploading the dataset to huggingface, and also uploading the models to huggingface.
+This folder contains all the code for fine-tuning the model, using the same environemnt as the data/RAG (global [requirements.txt](../requirements.txt)). All the code in this folder is designed to be separate from the rest of the codebase for reusability purposes - this is mainly enabled by uploading the dataset to huggingface, and also uploading the models to huggingface.
 
 Aside from the code though. What is the idea for fine-tuning? Well, as we know well, language models like LLaMA 2, which is what I've chosen to use here, have a strong tendancy to hallucinate -- especially on topics it may not be familiar with (like SUNY Brockport questions, for instance). Finetuning aims to address this gap in its knowledge by further training the model our QA dataset (generated in ../data-collection). Hopefully, by doing this, we can get a model that is more familiar with the domain of SUNY Brockport, and provide better answers to any questions it gets.
 
