@@ -6,11 +6,17 @@ Still in question... But, for now, I want to be able to run all the models and s
 Basically just like a side by side comparison for them all
 """
 from chatgpt_pe.categorized_engine import QuestionAnswering
-import os
+from chatgpt_pe.rag_engine import TraditionalRAGEngine
 
+question = "How can I apply to SUNY Brockport?"
 
-qa_bot = QuestionAnswering()
+categorized_qa = QuestionAnswering()
+traditional_qa = TraditionalRAGEngine()
 
-answer, price = qa_bot("How can I apply to SUNY Brockport?")
+answer, price = categorized_qa(question)
 
-print(answer)
+print("Categorized QA:\n", answer)
+
+answer = traditional_qa(question)
+
+print("\n\nNoncategorized QA:\n", answer)
