@@ -11,7 +11,7 @@ for comprehensive documentation on the modules used.
 
 from langchain.vectorstores import Chroma
 from langchain.chat_models import ChatOpenAI
-from langchain.embeddings import OpenAIEmbeddings
+from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 
@@ -27,10 +27,16 @@ search_args = {
     "k": 3
 }
 
+embedding_function = HuggingFaceBgeEmbeddings(
+    model_name = "BAAI/bge-small-en",
+    model_kwargs = {'device': 'cuda'},
+    encode_kwargs = {'normalize_embeddings': True}
+)
+
 # Initialize retriever using Chroma with OpenAI embeddings for semantic search
 retriever = Chroma(
     persist_directory = vectordb_persist_dir, 
-    embedding_function = OpenAIEmbeddings()
+    embedding_function = embedding_function
 ).as_retriever(search_kwargs = search_args)
 
 # Set up memory buffer to store chat history for context-aware responses

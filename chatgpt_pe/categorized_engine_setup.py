@@ -90,7 +90,7 @@ from langchain.document_loaders import TextLoader
 
 model = HuggingFaceBgeEmbeddings(
     model_name = "BAAI/bge-small-en",
-    # model_kwargs = {'device': 'cuda'},
+    model_kwargs = {'device': 'cuda'},
     encode_kwargs = {'normalize_embeddings': True} # set True to compute cosine similarity
 )
 
