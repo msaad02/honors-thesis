@@ -2,14 +2,14 @@ import json
 import pandas as pd
 
 # Load in the JSON file
-with open("/home/msaad/workspace/honors-thesis/data-collection/data/categorized_data.json", "r") as f:
+with open("/home/msaad/workspace/honors-thesis/data_collection/data/categorized_data.json", "r") as f:
     data = json.load(f)
 
 import os
 
 ### SETUP RAW DATASTORE ###
 def save_to_txt(data: str, filename: str, category: str, subcategory: str = None):
-    base_file_path = "/home/msaad/workspace/honors-thesis/data-collection/data/categorized_datastore/raw_data"
+    base_file_path = "/home/msaad/workspace/honors-thesis/data_collection/data/categorized_datastore/raw_data"
     
     filename = filename.removeprefix("https://www2.brockport.edu/").replace("/", "-")
 
@@ -45,7 +45,7 @@ for category, content in data.items():
 
 ###SETUP CHROMADB DATASTORE###
 def save_to_txt(data: str, filename: str, category: str, subcategory: str = None):
-    base_file_path = "/home/msaad/workspace/honors-thesis/data-collection/data/categorized_datastore/chroma_data"
+    base_file_path = "/home/msaad/workspace/honors-thesis/data_collection/data/categorized_datastore/chroma_data"
     
     filename = filename.removeprefix("https://www2.brockport.edu/").replace("/", "-")
 

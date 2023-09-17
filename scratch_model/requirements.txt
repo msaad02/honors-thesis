@@ -1,5 +1,0 @@
-datasets
-matplotlib
-einops
-tensorflow_datasets
-tensorflow_text

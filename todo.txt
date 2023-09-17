@@ -1,6 +1,0 @@
-- cleanup daa-collection folder
-- scratch model get-config for custom learning rate + make it bigger and 'fully' train
-- make rnn?
-- figure out how to push standard tensorflow models to huggingface hub
-- full finetuning
-- finish categorized search engine and cleanup

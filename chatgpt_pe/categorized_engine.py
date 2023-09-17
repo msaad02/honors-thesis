@@ -18,7 +18,7 @@ Functions:
 
 Usage:
     This script is intended to be used as a library, imported into other Python applications.
-    Initialize the main class, and call its `predict()` method to get an answer to a question.
+    Initialize the main class, and use its `__call__()` method to get an answer to a question.
 
 Example:
     >>> from chatgpt_pe.categorized_engine import QuestionAnswering
@@ -377,7 +377,7 @@ class QuestionAnswering:
         )
 
         if verbose:
-            print(f"\n{Fore.MAGENTA}FINAL ANSWER: \n{Style.RESET_ALL}{answer}")
-            print(f"\n{Fore.CYAN}FINAL PRICE: {Style.RESET_ALL}${round(price, 6)}\n\n")
+            # print(f"\n{Fore.MAGENTA}FINAL ANSWER: \n{Style.RESET_ALL}{answer}")
+            print(f"\n{Fore.CYAN}FINAL PRICE: {Style.RESET_ALL}${round(price, 6)}")
 
-        return answer, price
+        return answer #, price

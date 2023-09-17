@@ -10,7 +10,7 @@ This version of the implementation uses a "categorized engine", as I'm calling i
 
 ### Version 2
 
-The current version of this version uses langchain and chromadb. These allow for many of the same benefits of Operand alongside the added benefit of running locally, as opposed to it being powered by some external service. However, alongside this benefit, running things locally means I need to handle the data -- something that Operand handled prior. My dataset, coming from raw HTMLs, required cleaning and then chunking (for semantic search). These steps happen in the script [data_cleaning_for_ss.py](../data-collection/data_cleaning_for_ss.py), refer there for more details.
+The current version of this version uses langchain and chromadb. These allow for many of the same benefits of Operand alongside the added benefit of running locally, as opposed to it being powered by some external service. However, alongside this benefit, running things locally means I need to handle the data -- something that Operand handled prior. My dataset, coming from raw HTMLs, required cleaning and then chunking (for semantic search). These steps happen in the script [data_cleaning_for_ss.py](../data_collection/data_cleaning_for_ss.py), refer there for more details.
 
 Like the old implementation, this version uses GPT3.5 (ChatGPT) from openai as the LLM behind the scenes.
 

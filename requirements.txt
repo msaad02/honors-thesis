@@ -18,3 +18,10 @@ xformers
 ctransformers[gptq] # for exllama support
 auto-gptq
 colorama
+
+# For scratch model
+datasets
+matplotlib
+einops
+tensorflow_datasets
+tensorflow_text

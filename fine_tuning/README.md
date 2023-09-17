@@ -10,7 +10,7 @@ This is an incredible blog post about everything fine-tuning related. https://re
 
 # How to Finetune
 
-After setting up the environment, you can run the following command to finetune the model using the dataset available on huggingface (see [script to push it to hub](../data-collection/upload_to_huggingface.py))
+After setting up the environment, you can run the following command to finetune the model using the dataset available on huggingface (see [script to push it to hub](../data_collection/upload_to_huggingface.py))
 
 ```bash
 $ python finetune_llama.py \
@@ -39,7 +39,7 @@ Navigate to the examples folder (breaks otherwise, according to docs) in llama.c
 $ python make-ggml.py \
 --model msaad02/llama2_7b_brockport_gpt \
 --outname llama2_brockport_ggml \
---outdir /home/msaad/workspace/honors-thesis/fine-tuning/models \
+--outdir /home/msaad/workspace/honors-thesis/fine_tuning/models \
 --quants Q4_K_M
 ```
 

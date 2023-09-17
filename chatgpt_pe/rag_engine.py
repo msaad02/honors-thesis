@@ -17,7 +17,7 @@ from langchain.chains import RetrievalQA
 class TraditionalRAGEngine:
     def __init__(
             self,
-            vectordb_persist_dir = "/home/msaad/workspace/honors-thesis/data_collection/data/noncategorized_chroma",
+            vectordb_persist_dir = "/home/msaad/workspace/honors-thesis/data_collection/data/noncategorized_chroma/filtered_dataset_v1",
         ):
         self.vectordb_persist_dir = vectordb_persist_dir
 

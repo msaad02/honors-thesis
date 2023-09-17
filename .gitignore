@@ -1,5 +1,5 @@
 # chatgpt_pe folder
-chatgpt_pe/__pycache__/
+chatgpt_pe/__pycache__
 
 # data_collection folder
 data_collection/data/*
@@ -8,6 +8,7 @@ data_collection/data/*
 fine_tuning/models
 fine_tuning/results
 fine_tuning/wandb
+fine_tuning/__pycache__
 
 # scratch_model folder
 scratch_model/scratch-model-*

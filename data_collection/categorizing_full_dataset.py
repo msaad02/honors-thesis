@@ -70,7 +70,7 @@ import pandas as pd
 import json
 
 # Load the data
-df = pd.read_csv("/home/msaad/workspace/honors-thesis/data-collection/data/full_cleaned_data.csv")
+df = pd.read_csv("/home/msaad/workspace/honors-thesis/data_collection/data/full_cleaned_data.csv")
 
 # Initialize a nested dictionary to hold the categorized data
 categorized_data = defaultdict(lambda: defaultdict(dict))
@@ -101,7 +101,7 @@ for idx, row in df.iterrows():
 final_output = json.dumps(dict(categorized_data), indent=4)
 
 # Save the JSON structure to a file
-json_file_path = '/home/msaad/workspace/honors-thesis/data-collection/data/categorized_data.json'
+json_file_path = '/home/msaad/workspace/honors-thesis/data_collection/data/categorized_data.json'
 with open(json_file_path, 'w') as f:
     f.write(final_output)
 

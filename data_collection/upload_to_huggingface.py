@@ -17,7 +17,7 @@ preformatted_dataset_name = "msaad02/preformat-ss-cleaned-brockport-qa"
 formatted_dataset_name = "msaad02/formatted-ss-cleaned-brockport-qa"        
 
 # JSON file name
-json_file_name = "/home/msaad/workspace/honors-thesis/data-collection/data/cleaned_ss_dataset.json"
+json_file_name = "/home/msaad/workspace/honors-thesis/data_collection/data/cleaned_ss_dataset.json"
 
 # ------------------------------ #
 # Cleanup and format the dataset #
@@ -27,8 +27,8 @@ json_file_name = "/home/msaad/workspace/honors-thesis/data-collection/data/clean
 # These include broad information about the school, and tend to be the most information rich webpages. (6% ish, see more details in data_cleaning_for_ss.py)
 
 # Loading in relevant data.
-gpt_output   = pickle.load(open('/home/msaad/workspace/honors-thesis/data-collection/data/gpt_output.p', 'rb'))
-cleaned_dict = pickle.load(open('/home/msaad/workspace/honors-thesis/data-collection/data/cleaned_url_response_dict.p', 'rb'))
+gpt_output   = pickle.load(open('/home/msaad/workspace/honors-thesis/data_collection/data/gpt_output.p', 'rb'))
+cleaned_dict = pickle.load(open('/home/msaad/workspace/honors-thesis/data_collection/data/cleaned_url_response_dict.p', 'rb'))
 
 # Filter large dataset to small dataset
 small_dataset = {k: v for k, v in gpt_output.items() if k in cleaned_dict.keys()}

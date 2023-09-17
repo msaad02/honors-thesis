@@ -163,4 +163,4 @@ def recursive_scrape(webpage: str, depth: int) -> dict:
 # For future runs, I may up that number. A depth of 6 should add roughly an additional 1000 webpages.
 
 data = recursive_scrape("https://www2.brockport.edu", 5)
-pickle.dump(data, open('/home/msaad/workspace/honors-thesis/data-collection/data/scraper_output2.p', 'wb'))
+pickle.dump(data, open('/home/msaad/workspace/honors-thesis/data_collection/data/scraper_output2.p', 'wb'))

@@ -48,7 +48,7 @@ This cleaning process about half of the webpages in the dataset, reducing its si
 ---
 ## Categorize Dataset by URL
 
-After cleaning the dataset, I wanted to categorize the webpages by their URL. This is because I wanted to be able to filter the dataset by URL, and also because I wanted to be able to generate data from specific topics. For example, I wanted to be able to generate data from only the financial aid webpages, or only the admissions webpages. This is done in [categorize_urls.py](./categorize_urls.py), and afterwards is only used in [categorized_engine_setup.py](../chatgpt-pe/categorized_engine_setup.py) to improve the search engine.
+After cleaning the dataset, I wanted to categorize the webpages by their URL. This is because I wanted to be able to filter the dataset by URL, and also because I wanted to be able to generate data from specific topics. For example, I wanted to be able to generate data from only the financial aid webpages, or only the admissions webpages. This is done in [categorize_urls.py](./categorize_urls.py), and afterwards is only used in [categorized_engine_setup.py](../chatgpt_pe/categorized_engine_setup.py) to improve the search engine.
 
 ---
 ## Convert to QA Dataset Using GPT3.5 (ChatGPT)

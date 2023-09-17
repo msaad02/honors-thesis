@@ -58,7 +58,7 @@ NOTE July 17th Update:
 Dedupe complete at the bottom of this script.
 """
 
-data_folder = "/home/msaad/workspace/honors-thesis/data-collection/data/"
+data_folder = "/home/msaad/workspace/honors-thesis/data_collection/data/"
 responses_dict = pickle.load(open(data_folder + "scraper_output.p", "rb"))
 
 # def get_text(item: tuple[str, requests.models.Response]) -> list:

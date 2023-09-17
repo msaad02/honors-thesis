@@ -26,7 +26,7 @@ from tqdm import tqdm
 import trafilatura
 import pandas as pd
 
-data_folder = "/home/msaad/workspace/honors-thesis/data-collection/data/"
+data_folder = "/home/msaad/workspace/honors-thesis/data_collection/data/"
 
 # NOTE: data_dictionary is a URL/response dictionary. The key is the URL and the value is the response from scraping the URL.
 data_dictionary = pickle.load(open(data_folder + "scraper_output.p", "rb"))

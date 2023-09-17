@@ -25,7 +25,7 @@ from tqdm import tqdm
 import csv
 import trafilatura
 
-data_folder = "/home/msaad/workspace/honors-thesis/data-collection/data/"
+data_folder = "/home/msaad/workspace/honors-thesis/data_collection/data/"
 responses_dict = pickle.load(open(data_folder + "scraper_output.p", "rb"))
 
 
@@ -184,7 +184,7 @@ def clean_dict(
 cleaned_dict = clean_dict(responses_dict)
 
 # NOTE: Saving off cleaned dictionary for other places in project
-pickle.dump(cleaned_dict, open('/home/msaad/workspace/honors-thesis/data-collection/data/filtered_url_response_dict.p', 'wb'))
+pickle.dump(cleaned_dict, open('/home/msaad/workspace/honors-thesis/data_collection/data/filtered_url_response_dict.p', 'wb'))
 
 print("Begin fetching cleaned data...")
 # Get cleaned version of html for all data. Wrap in tqdm for progress bar.

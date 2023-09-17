@@ -1,1 +1,0 @@
-Mainly is just scratch work that may be helpful to have later. Delete after a whlie if its not going to be useful.
