@@ -81,6 +81,8 @@ def main():
 
             try:
                 answer = bot(user_input)
+                if isinstance(answer, tuple):
+                    answer = answer[0]
             except Exception as e:
                 print(f'{Fore.RED}\nError: {Style.RESET_ALL}{e}')
                 continue

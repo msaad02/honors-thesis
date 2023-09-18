@@ -10,9 +10,11 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # prevent tensorflow logs
 import tensorflow as tf
 import re
 
-tf.config.experimental.set_memory_growth(
-    tf.config.list_physical_devices('GPU')[0], True
-) # stop tensorflow from taking up all GPU memory
+gpu_devices = tf.config.list_physical_devices('GPU')
+
+if len(gpu_devices) > 0:
+    # stop tensorflow from taking up all GPU memory
+    tf.config.experimental.set_memory_growth(gpu_devices[0], True)
 
 class ScratchModelEngine():
     """
