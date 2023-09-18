@@ -13,6 +13,7 @@ from langchain.vectorstores import Chroma
 from langchain.llms import OpenAI
 from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain.chains import RetrievalQA
+from torch.cuda import is_available
 
 class TraditionalRAGEngine:
     def __init__(
@@ -23,7 +24,7 @@ class TraditionalRAGEngine:
 
         self.embedding_function = HuggingFaceBgeEmbeddings(
             model_name="BAAI/bge-small-en",
-            model_kwargs={'device': 'cuda'},
+            model_kwargs={'device': 'cuda' if is_available() else 'cpu'},
             encode_kwargs={'normalize_embeddings': True}
         )
 
