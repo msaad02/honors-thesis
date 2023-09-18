@@ -20,7 +20,7 @@ class ScratchModelEngine():
     """
     def __init__(
             self,
-            model_path: str = "/home/msaad/workspace/honors-thesis/scratch_model/models/translator",
+            model_path: str = "/home/msaad/workspace/honors-thesis/scratch_model/models/transformer_v2",
         ):
         """
         Initialize the scratch model.
