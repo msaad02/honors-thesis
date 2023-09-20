@@ -380,4 +380,4 @@ class QuestionAnswering:
             # print(f"\n{Fore.MAGENTA}FINAL ANSWER: \n{Style.RESET_ALL}{answer}")
             print(f"\n{Fore.CYAN}FINAL PRICE: {Style.RESET_ALL}${round(price, 6)}")
 
-        return answer #, price
+        return answer
