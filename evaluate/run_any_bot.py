@@ -3,8 +3,12 @@ Allow you to use any of the bots interactively in the terminal
 
 To add a new bot, add a new option to bot_options_dict and add a new case to the match statement.
 """
+import sys
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # stop showing tensorflow logs...
+
+# Set path to parent directory so we can import from other folders.
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from colorama import init as colorama_init
 from colorama import Fore, Style

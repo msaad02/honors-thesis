@@ -219,7 +219,7 @@ class QuestionAnswering:
                 print(f"\n{Fore.RED}ERROR: QUESTION IS UNRELATED.")
                 print(f"\n{Fore.CYAN}FINAL PRICE: {Style.RESET_ALL}${round(price, 6)}\n\n")
 
-            return "Error: Question is unrelated.", price
+            return "Error: Question is unrelated."
 
         # Now lets get the list of subcategories for the first category
         subcategory_keys = self.data[first_category].keys() # NOTE: This includes URLs AND subcategories. Need to filter out URLs
@@ -248,7 +248,7 @@ class QuestionAnswering:
                     print(f"\n{Fore.RED}ERROR: NOT ENOUGH SEARCH RESULTS. NO SUBCATEGORIES AVAILABLE.")
                     print(f"\n{Fore.CYAN}FINAL PRICE: {Style.RESET_ALL}${round(price, 6)}\n\n")
 
-                return "Error: Not enough search results and no subcategories available.", price
+                return "Error: Not enough search results and no subcategories available."
 
             # Force pick subcategory if only one available and move to final step
             elif len(subcategories) == 1:
@@ -337,7 +337,7 @@ class QuestionAnswering:
             if verbose:
                 print(f"\n{Fore.RED}BREAKOUT ANSWER: \n{Style.RESET_ALL}{subcategory_or_answer}")
                 print(f"\n{Fore.CYAN}FINAL PRICE: {Style.RESET_ALL}${round(price, 6)}\n\n")
-            return subcategory_or_answer, price
+            return subcategory_or_answer
         
 
         ### Continues past this point only if GPT chose a category

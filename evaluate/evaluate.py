@@ -12,8 +12,17 @@ we also create a set of "master answers" with key information highlighted, we
 could have GPT-4 evaluate whether or not the important information is inside the
 answer as well as grammar, usefulness, and a magnitude of other things.
 """
+import sys
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # prevent tensorflow logs
+
+# Set path to parent directory so we can import from other folders.
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import json
 from tqdm import tqdm
+from torch.cuda import is_available
+
 from chatgpt_pe.categorized_engine import QuestionAnswering
 from chatgpt_pe.rag_engine import TraditionalRAGEngine
 from fine_tuning.finetune_engine import FineTunedEngine
@@ -24,7 +33,7 @@ question = "How can I apply to SUNY Brockport?"
 model_list = {
     "Categorized": QuestionAnswering(verbose=False),
     "Traditional": TraditionalRAGEngine(),
-    "Finetuned": FineTunedEngine(model_type="gguf"),
+    "Finetuned": FineTunedEngine(model_type=("gptq" if is_available() else "gguf")),
     "Scratch": ScratchModelEngine()
 }
 
@@ -36,7 +45,6 @@ def run_all_models(question: str, models: dict):
     # Error out if type mismatch.
     assert(isinstance(question, str))
     assert(isinstance(models, dict))
-    # Probably good idea to make sure contents of model is type of class from my classes but... too much work.
 
     answers = {}
     for name, model in tqdm(models.items()):
@@ -47,12 +55,4 @@ def run_all_models(question: str, models: dict):
 
 answers = run_all_models(question=question, models=model_list)
 
-print(answers)
-
-# Answers
-# {
-#     'Categorized': 'To apply to SUNY Brockport, you need to either use the Common App or the SUNY App. Additionally, you will need to provide your Official High School transcript and at least one letter of recommendation.', 
-#     'Traditional': ' You can apply to SUNY Brockport by visiting their website and submitting an online application.', 
-#     'Finetuned': 'You can apply to SUNy Brockport by following the application process outlined on their website.', 
-#     'Scratch': 'You can apply to Suny Brockport by visiting their website and filling out the application.'
-# }
+print(json.dumps(answers, indent=4))
