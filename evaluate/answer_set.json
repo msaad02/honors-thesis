@@ -1,0 +1,26 @@
+{
+    "How can I apply?": {
+        "Categorized": "To apply to Brockport, you will need to submit three things. Firstly, you need to apply through the Common App or SUNY App. Secondly, you need to submit your official High School transcript. Lastly, you need to provide at least one letter of recommendation.",
+        "Traditional": " To apply, you just need to fill out an application form on our website.",
+        "Finetuned": "You can apply by completing the application process on the university's website.",
+        "Scratch": "You can apply to Suny Brockport by visiting their website and filling out the application."
+    },
+    "Are SAT scores required to apply?": {
+        "Categorized": "No, SAT scores are not required to apply to SUNY Brockport. You can still submit them if you wish, particularly if you're interested in being considered for their Extraordinary Academic Scholarships.",
+        "Traditional": " No, SAT scores are not required to apply.",
+        "Finetuned": "The SAT or ACT is not required if you are applying for the Fall 2023 semester. If you choose to submit it, it will be used as part of your review for admission.",
+        "Scratch": "Yes, after submitting apply to apply are typically. For specific scholarships are not specified on the application process."
+    },
+    "How can I apply for financial aid?": {
+        "Categorized": "The first step to apply for financial aid is to complete the Free Application for Federal Student Aid (FAFSA) to determine eligibility for federal and state financial aid programs. This can be done electronically. After selecting the appropriate aid year, you can check for any unsatisfied student requirements and accept or decline offered financial aid awards. You can also complete Federal Direct Stafford Loan Entrance Counseling and apply for a Federal Parent PLUS Loan. Remember, the FAFSA must be completed each year to be considered for grant money awarded by the federal government.",
+        "Traditional": " You can apply for financial aid by filling out the Free Application for Federal Student Aid (FAFSA) form. You can find the form online at fafsa.ed.gov.",
+        "Finetuned": "You can apply for financial aid by submitting the FAFSA application online at fafsa.gov or contacting their financial aid office for assistance in completing the form.",
+        "Scratch": "You can apply for financial aid through the financial aid office."
+    },
+    "Does Brockport have a computer science department?": {
+        "Categorized": "Yes, Brockport does have a computer science department.",
+        "Traditional": "\nYes, Brockport does have a computer science department.",
+        "Finetuned": "Yes, Brockport has a computer science department that offers a variety of programs for students interested in pursuing careers in the field.",
+        "Scratch": "Yes, Brockport has a computer science department that can provide students with computer science, including computer science, computer labs, and other world."
+    }
+}

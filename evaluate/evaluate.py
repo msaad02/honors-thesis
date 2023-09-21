@@ -52,7 +52,47 @@ def run_all_models(question: str, models: dict):
 
     return answers
 
+def eval_model(answer: str, best_answer: str):
+    """
+    Consider ways to evaluate questions.  1-10 scale?
 
-answers = run_all_models(question=question, models=model_list)
+    See "Grading ideas" section at the top in the docstring.
 
-print(json.dumps(answers, indent=4))
+    Might consider adding another column to the quesiton db
+    that contains the "MUST CONTAIN" info type column that
+    GPT4 can easily evaluate whether its in the answer given.
+    """
+    assert(isinstance(answer, str))
+    assert(isinstance(best_answer, str))
+
+    return 10
+
+
+def main():
+
+    with open('/home/msaad/workspace/honors-thesis/evaluate/eval_questions.json') as f:
+        data = json.load(f)
+
+    answer_set = {}
+    for qa_pair in data:
+        question, answer = qa_pair['question'], qa_pair['answer']
+        
+        print("Question:", question)
+        answers = run_all_models(question=question, models=model_list)
+
+        answer_set[question] = answers
+
+        print("-----------")
+        print(json.dumps(answers, indent=4))
+        print("-----------")
+
+    # open a file for writing
+    with open('/home/msaad/workspace/honors-thesis/evaluate/answer_set.json', 'w') as f:
+        # write the dictionary to the file in JSON format
+        json.dump(answer_set, f, indent=4)
+
+
+
+
+if __name__ == "__main__":
+    main()
