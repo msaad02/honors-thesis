@@ -1,18 +1,47 @@
 [
     {
+        "type": "Admissions",
         "question": "How can I apply?",
-        "eval_info": "You can apply to SUNY Brockport by completing the Common Application or the SUNY Application."
+        "eval_info": "Prospective students must apply through the Common App or SUNY App. In addition, students must submit any additional requirements, like your transcripts, letters of recommendation, additional essay or statement, and SAT/ACT scores (SAT/ACT scores are optional). Finally, students must pay the $50 application fee unless they qualify for a fee waiver."
     },
     {
+        "type": "Admissions",
         "question": "Are SAT scores required to apply?",
-        "eval_info": "No, SAT scores are not required to apply, however, submitting a score can enhance your application."
+        "eval_info": "SAT scores are optional. Noteworthy is that SAT scores are required to be eligible for Extraordinary Academic Scholarships, and there are some exceptions to the SAT optional application, look for specific information online for more information."
     },
     {
+        "type": "Financial Aid",
         "question": "How can I apply for financial aid?",
-        "eval_info": "You can start your application process by completing the FAFSA. If you have any additional or specific questions, please contact the Financial Aid Office."
+        "eval_info": "The Free Application for Federal Student Aid (FAFSA) is the first step to determine eligibility for federal and state financial aid programs. Additionally, there are other scholarships, such as the excelsior scholarship available for financial aid. Look on our website for more information."
     },
     {
+        "type": "Academic",
         "question": "Does Brockport have a computer science department?",
         "eval_info": "Yes, SUNY Brockport does have a Computer Science department."
+    },
+    {
+        "type": "Academic",
+        "question": "Ia there a masters program in CS?",
+        "eval_info": "No, SUNY Brockport does not offer a master program in Computer Science."
+    },
+    {
+        "type": "Academic",
+        "question": "What is the average class size?",
+        "eval_info": "Our average class size is typically between 33 to 35 students, which allows for a more personal learning experience."
+    },
+    {
+        "type": "Academic",
+        "question": "What is the student to faculty ratio?",
+        "eval_info": "The undergraduate student to faculty ratio is 18:1."
+    },
+    {
+        "type": "Academic",
+        "question": "How many programs does Brockport offer?",
+        "eval_info": "SUNY Brockport offers over 50 undergraduate majors. And 50+ graduate programs."
+    },
+    {
+        "type": "Financial Aid",
+        "question": "What is the cost of attendance?",
+        "eval_info": "The cost of attendance will vary from student to student, however, tuition, excluding room and board is $7,070 for in-state students and $14,140 for out-of-state students. Contact the financial aid office for more information."
     }
 ]

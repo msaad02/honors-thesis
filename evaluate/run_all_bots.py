@@ -42,15 +42,16 @@ def run_all_models(question: str, models: dict) -> dict:
 def main():
     # Read in the questions to ask.
     with open('/home/msaad/workspace/honors-thesis/evaluate/eval_questions.json') as f:
-        data = json.load(f)
+        eval_set = json.load(f)
 
     answer_set = {}
-    for qa_pair in data:
-        question, eval_info = qa_pair['question'], qa_pair['eval_info']
+    for qa_info in eval_set:
+        type, question, eval_info = qa_info['type'], qa_info['question'], qa_info['eval_info']
         
         print("Question:", question)
         answers = run_all_models(question=question, models=model_list)
         answers['Eval_Info'] = eval_info
+        answers['Type'] = type
 
         answer_set[question] = answers
 
@@ -63,7 +64,6 @@ def main():
         json.dump(answer_set, f, indent=4)
     
     print("Finished!")
-
 
 if __name__ == "__main__":
     main()

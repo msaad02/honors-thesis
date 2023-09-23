@@ -1,30 +1,74 @@
 {
     "How can I apply?": {
-        "Categorized": "To apply to Brockport, you need to do three things: \n1. Apply through the Common App or SUNY App\n2. Submit your Official High School transcript\n3. Provide at least one letter of recommendation. \nYour application will be reviewed holistically by Admissions Advisors, taking into account your high school courses, involvement in activities, letter(s) of recommendation, and college essay.",
-        "Traditional": " You can apply online or by mail. To apply online, you can visit our website and follow the instructions. To apply by mail, you can download the application from our website and mail it to our address.",
-        "Finetuned": "You can apply by visiting their website or contacting them directly for more information on application processes.",
+        "Categorized": "To apply to Brockport you need to do the following:\n\n1. Apply through the Common App or SUNY App\n2. Submit your official High School transcript\n3. Provide at least one letter of recommendation\n\nThe Admissions Advisors will review your application holistically, looking at your high school courses, community service, clubs, and your college essay.",
+        "Traditional": " You can apply by submitting an application online, or by downloading and printing an application from the website.",
+        "Finetuned": "You can apply to the School of Graduate Studies at Brockport by filling out an application form on their website.",
         "Scratch": "You can apply to Suny Brockport by visiting their website and filling out the application.",
-        "Eval_Info": "You can apply to SUNY Brockport by completing the Common Application or the SUNY Application."
+        "Eval_Info": "Prospective students must apply through the Common App or SUNY App. In addition, students must submit any additional requirements, like your transcripts, letters of recommendation, additional essay or statement, and SAT/ACT scores (SAT/ACT scores are optional). Finally, students must pay the $50 application fee unless they qualify for a fee waiver.",
+        "Type": "Admissions"
     },
     "Are SAT scores required to apply?": {
-        "Categorized": "No, SAT scores are not required to apply to SUNY Brockport. However, you can still submit them if you wish, particularly if you're interested in being considered for their Extraordinary Academic Scholarships.",
-        "Traditional": " No, SAT scores are not required to apply.",
-        "Finetuned": "SAT scores are not required for admission consideration at SUNY Brockport.",
+        "Categorized": "No, SAT scores are not required to apply to SUNY Brockport. However, you can submit them if you have already taken the test, and they may be required for certain programs or scholarships.",
+        "Traditional": "\nNo, SAT scores are not required to apply.",
+        "Finetuned": "Yes, the SAT score is a required component of the application for admission at Brockport.",
         "Scratch": "Yes, after submitting apply to apply are typically. For specific scholarships are not specified on the application process.",
-        "Eval_Info": "No, SAT scores are not required to apply, however, submitting a score can enhance your application."
+        "Eval_Info": "SAT scores are optional. Noteworthy is that SAT scores are required to be eligible for Extraordinary Academic Scholarships, and there are some exceptions to the SAT optional application, look for specific information online for more information.",
+        "Type": "Admissions"
     },
     "How can I apply for financial aid?": {
-        "Categorized": "To apply for financial aid, you need to complete the Free Application for Federal Student Aid (FAFSA). You are encouraged to file your FAFSA electronically. Additionally, you can apply for a Federal Parent PLUS Loan. It's important to note that the FAFSA application needs to be completed each year if you want to be considered for a grant money awarded by the federal government.",
-        "Traditional": " You can apply for financial aid through the Free Application for Federal Student Aid (FAFSA). You can find more information and the application at fafsa.ed.gov.",
-        "Finetuned": "To apply for financial aid at SUNY Brockport, you must submit a FAFSA (Free Application for Federal Student Aid) form each year before October 1. More information on the application process is available on their website or by contacting the Financial Aid Office directly.",
+        "Categorized": "To apply for financial aid, you need to complete the Free Application for Federal Student Aid (FAFSA). This is the first step to determine your eligibility for federal and state financial aid programs. You are encouraged to file your FAFSA electronically. You can find instructions for filing the FAFSA on the internet. After you submit the FAFSA, you can follow up by checking \"Unsatisfied Student Requirements,\" accept and/or decline offered financial aid awards, complete Federal Direct Stafford Loan Entrance Counseling, and apply for a Federal Parent PLUS Loan if necessary. Remember, to be considered for grant money awarded by the federal government, you need to complete the FAFSA application each year.",
+        "Traditional": " You can apply for financial aid through your school's financial aid office or by filling out the Free Application for Federal Student Aid (FAFSA) online.",
+        "Finetuned": "You can apply for financial aid by completing the Free Application for Federal Student Aid (FAFSA).",
         "Scratch": "You can apply for financial aid through the financial aid office.",
-        "Eval_Info": "You can start your application process by completing the FAFSA. If you have any additional or specific questions, please contact the Financial Aid Office."
+        "Eval_Info": "The Free Application for Federal Student Aid (FAFSA) is the first step to determine eligibility for federal and state financial aid programs. Additionally, there are other scholarships, such as the excelsior scholarship available for financial aid. Look on our website for more information.",
+        "Type": "Financial Aid"
     },
     "Does Brockport have a computer science department?": {
-        "Categorized": "Yes, Brockport does have a computer science department. It's called the Department of Computing Sciences and it offers majors in Computer Science and Computer Information Systems.",
+        "Categorized": "Yes, Brockport does have a computer science department. It is called the Department of Computing Sciences and it offers a major in Computer Science.",
         "Traditional": "\nYes, Brockport does have a computer science department.",
-        "Finetuned": "Yes, Brockport has a Computer Science Department.",
+        "Finetuned": "Yes, Brockport has a computer science department with concentrations in data analytics and cybersecurity.",
         "Scratch": "Yes, Brockport has a computer science department that can provide students with computer science, including computer science, computer labs, and other world.",
-        "Eval_Info": "Yes, SUNY Brockport does have a Computer Science department."
+        "Eval_Info": "Yes, SUNY Brockport does have a Computer Science department.",
+        "Type": "Academic"
+    },
+    "Ia there a masters program in CS?": {
+        "Categorized": "The information provided does not confirm the availability of a masters program in Computer Science (CS). Therefore, the most relevant subcategory to find this information would be \"admissions\".",
+        "Traditional": "\nYes, there are many master's programs in computer science. You can find them at universities and colleges all over the world.",
+        "Finetuned": "Yes, there is a Masters program in Computer Science at SUNY Brockport.",
+        "Scratch": "Yes, Suny Brockport offers a masters program in place. Students can learn more about the program that can be combined with the program is on the website.",
+        "Eval_Info": "No, SUNY Brockport does not offer a master program in Computer Science.",
+        "Type": "Academic"
+    },
+    "What is the average class size?": {
+        "Categorized": "I'm sorry, but the information provided does not include the average class size.",
+        "Traditional": "\nI don't know.",
+        "Finetuned": "The average class size at SUNY Brockport is 25 students per class with a student-to-faculty ratio of 18:1.",
+        "Scratch": "The average class size at Suny Brockport is a program that focuses on preparing students for law school and maintain small class sizes to maintain small class sizes.",
+        "Eval_Info": "Our average class size is typically between 33 to 35 students, which allows for a more personal learning experience.",
+        "Type": "Academic"
+    },
+    "What is the student to faculty ratio?": {
+        "Categorized": "I'm sorry, but the information provided does not include the student to faculty ratio.",
+        "Traditional": " I'm sorry, I don't know.",
+        "Finetuned": "The student to faculty ratio at SUNY Brockport is 20:1.",
+        "Scratch": "The student affairs provides a faculty and staff in designing students to get involved in.",
+        "Eval_Info": "The undergraduate student to faculty ratio is 18:1.",
+        "Type": "Academic"
+    },
+    "How many programs does Brockport offer?": {
+        "Categorized": "I'm sorry, but the information provided does not specify the total number of programs offered by Brockport.",
+        "Traditional": "\n\nI'm not sure, but you can visit the Brockport website to find out.",
+        "Finetuned": "Brockport offers 100+ undergraduate programs and 58 graduate programs.",
+        "Scratch": "Brockport offers over minors.",
+        "Eval_Info": "SUNY Brockport offers over 50 undergraduate majors. And 50+ graduate programs.",
+        "Type": "Academic"
+    },
+    "What is the cost of attendance?": {
+        "Categorized": "I'm sorry, but the specific cost of attendance is not provided in the information given.",
+        "Traditional": "\nI'm sorry, I don't know.",
+        "Finetuned": "The cost of attendance at SUNY Brockport includes tuition, fees, room & board, books & supplies, transportation, personal expenses, and other expenses.",
+        "Scratch": "The cost of attendance is used for fees, for offcampus living, and personal expenses.",
+        "Eval_Info": "The cost of attendance will vary from student to student, however, tuition, excluding room and board is $7,070 for in-state students and $14,140 for out-of-state students. Contact the financial aid office for more information.",
+        "Type": "Financial Aid"
     }
 }

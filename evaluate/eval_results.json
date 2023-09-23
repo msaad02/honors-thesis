@@ -1,0 +1,173 @@
+{
+    "How can I apply?": {
+        "Type": "Admissions",
+        "Categorized": [
+            "8",
+            "To apply to Brockport you need to do the following:\n\n1. Apply through the Common App or SUNY App\n2. Submit your official High School transcript\n3. Provide at least one letter of recommendation\n\nThe Admissions Advisors will review your application holistically, looking at your high school courses, community service, clubs, and your college essay."
+        ],
+        "Traditional": [
+            "4",
+            " You can apply by submitting an application online, or by downloading and printing an application from the website."
+        ],
+        "Finetuned": [
+            "4",
+            "You can apply to the School of Graduate Studies at Brockport by filling out an application form on their website."
+        ],
+        "Scratch": [
+            "4",
+            "You can apply to Suny Brockport by visiting their website and filling out the application."
+        ]
+    },
+    "Are SAT scores required to apply?": {
+        "Type": "Admissions",
+        "Categorized": [
+            "8",
+            "No, SAT scores are not required to apply to SUNY Brockport. However, you can submit them if you have already taken the test, and they may be required for certain programs or scholarships."
+        ],
+        "Traditional": [
+            "6",
+            "\nNo, SAT scores are not required to apply."
+        ],
+        "Finetuned": [
+            "5",
+            "Yes, the SAT score is a required component of the application for admission at Brockport."
+        ],
+        "Scratch": [
+            "2",
+            "Yes, after submitting apply to apply are typically. For specific scholarships are not specified on the application process."
+        ]
+    },
+    "How can I apply for financial aid?": {
+        "Type": "Financial Aid",
+        "Categorized": [
+            "8",
+            "To apply for financial aid, you need to complete the Free Application for Federal Student Aid (FAFSA). This is the first step to determine your eligibility for federal and state financial aid programs. You are encouraged to file your FAFSA electronically. You can find instructions for filing the FAFSA on the internet. After you submit the FAFSA, you can follow up by checking \"Unsatisfied Student Requirements,\" accept and/or decline offered financial aid awards, complete Federal Direct Stafford Loan Entrance Counseling, and apply for a Federal Parent PLUS Loan if necessary. Remember, to be considered for grant money awarded by the federal government, you need to complete the FAFSA application each year."
+        ],
+        "Traditional": [
+            "7",
+            " You can apply for financial aid through your school's financial aid office or by filling out the Free Application for Federal Student Aid (FAFSA) online."
+        ],
+        "Finetuned": [
+            "7",
+            "You can apply for financial aid by completing the Free Application for Federal Student Aid (FAFSA)."
+        ],
+        "Scratch": [
+            "4",
+            "You can apply for financial aid through the financial aid office."
+        ]
+    },
+    "Does Brockport have a computer science department?": {
+        "Type": "Academic",
+        "Categorized": [
+            "10",
+            "Yes, Brockport does have a computer science department. It is called the Department of Computing Sciences and it offers a major in Computer Science."
+        ],
+        "Traditional": [
+            "10",
+            "\nYes, Brockport does have a computer science department."
+        ],
+        "Finetuned": [
+            "10",
+            "Yes, Brockport has a computer science department with concentrations in data analytics and cybersecurity."
+        ],
+        "Scratch": [
+            "10",
+            "Yes, Brockport has a computer science department that can provide students with computer science, including computer science, computer labs, and other world."
+        ]
+    },
+    "Ia there a masters program in CS?": {
+        "Type": "Academic",
+        "Categorized": [
+            "1",
+            "The information provided does not confirm the availability of a masters program in Computer Science (CS). Therefore, the most relevant subcategory to find this information would be \"admissions\"."
+        ],
+        "Traditional": [
+            "2",
+            "\nYes, there are many master's programs in computer science. You can find them at universities and colleges all over the world."
+        ],
+        "Finetuned": [
+            "1",
+            "Yes, there is a Masters program in Computer Science at SUNY Brockport."
+        ],
+        "Scratch": [
+            "1",
+            "Yes, Suny Brockport offers a masters program in place. Students can learn more about the program that can be combined with the program is on the website."
+        ]
+    },
+    "What is the average class size?": {
+        "Type": "Academic",
+        "Categorized": [
+            "1",
+            "I'm sorry, but the information provided does not include the average class size."
+        ],
+        "Traditional": [
+            "1",
+            "\nI don't know."
+        ],
+        "Finetuned": [
+            "6",
+            "The average class size at SUNY Brockport is 25 students per class with a student-to-faculty ratio of 18:1."
+        ],
+        "Scratch": [
+            "2",
+            "The average class size at Suny Brockport is a program that focuses on preparing students for law school and maintain small class sizes to maintain small class sizes."
+        ]
+    },
+    "What is the student to faculty ratio?": {
+        "Type": "Academic",
+        "Categorized": [
+            "1",
+            "I'm sorry, but the information provided does not include the student to faculty ratio."
+        ],
+        "Traditional": [
+            "1",
+            " I'm sorry, I don't know."
+        ],
+        "Finetuned": [
+            "6",
+            "The student to faculty ratio at SUNY Brockport is 20:1."
+        ],
+        "Scratch": [
+            "1",
+            "The student affairs provides a faculty and staff in designing students to get involved in."
+        ]
+    },
+    "How many programs does Brockport offer?": {
+        "Type": "Academic",
+        "Categorized": [
+            "1",
+            "I'm sorry, but the information provided does not specify the total number of programs offered by Brockport."
+        ],
+        "Traditional": [
+            "2",
+            "\n\nI'm not sure, but you can visit the Brockport website to find out."
+        ],
+        "Finetuned": [
+            "9",
+            "Brockport offers 100+ undergraduate programs and 58 graduate programs."
+        ],
+        "Scratch": [
+            "2",
+            "Brockport offers over minors."
+        ]
+    },
+    "What is the cost of attendance?": {
+        "Type": "Financial Aid",
+        "Categorized": [
+            "2",
+            "I'm sorry, but the specific cost of attendance is not provided in the information given."
+        ],
+        "Traditional": [
+            "1",
+            "\nI'm sorry, I don't know."
+        ],
+        "Finetuned": [
+            "6",
+            "The cost of attendance at SUNY Brockport includes tuition, fees, room & board, books & supplies, transportation, personal expenses, and other expenses."
+        ],
+        "Scratch": [
+            "3",
+            "The cost of attendance is used for fees, for offcampus living, and personal expenses."
+        ]
+    }
+}
