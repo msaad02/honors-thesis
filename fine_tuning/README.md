@@ -45,7 +45,7 @@ $ python make-ggml.py \
 
 ## GPTQ
 
-Using [quantize_gpt.py](./quantize_gptq.py) script (not mine), you can quantize the model. 
+Using [quantize_gpt.py](./quantize_gptq.py) script ([credit](https://gist.github.com/TheBloke/b47c50a70dd4fe653f64a12928286682)), you can quantize the model. 
 
 Run the following command to do it:
 

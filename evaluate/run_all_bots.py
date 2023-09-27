@@ -29,7 +29,11 @@ model_list = {
 }
 
 def run_all_models(question: str, models: dict) -> dict:
-    # Error out if type mismatch.
+    """
+    Run all the models on the given question with progress bar
+    and return answers in a dictionary.
+    """
+    # Type Checking
     assert(isinstance(question, str))
     assert(isinstance(models, dict))
 

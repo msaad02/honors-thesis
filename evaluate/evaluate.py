@@ -1,6 +1,5 @@
 """
 Idea:
-
 GPT-4 evaluation has become a common use case as of late, with varying
 degrees of success. The idea is to have GPT-4 evaluate the answer given
 by the bot and compare it to the best answer. The best answer is the
@@ -10,6 +9,12 @@ answer and given a score from 1-10. 1 being the worst and 10 being the
 best. The score is then averaged over all the questions in the question
 set. The average score is the score for the bot. The higher the score,
 the better the bot is at answering questions.
+
+Implementation:
+The implementation of this idea is fairly simple. The GPT-4 is given a
+question and the relevant correct info. GPT-4 is then asked to evaluate 
+the answer given by the bot on a 1-10 scale. We use the answer_set.json
+file generated from run_all_bots.py script as the input.
 """
 import os
 import openai
