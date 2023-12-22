@@ -3,6 +3,7 @@ chatgpt_pe/__pycache__
 
 # data_collection folder
 data_collection/data/*
+NEW_data_collection/data/*
 
 # fine_tuning folder
 fine_tuning/models
