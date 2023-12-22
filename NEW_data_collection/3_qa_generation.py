@@ -11,7 +11,6 @@ faster. Who likes to wait?
 
 import pandas as pd
 import os
-import openai
 import time
 import json
 import asyncio
@@ -19,17 +18,15 @@ import httpx
 import time
 
 data = pd.read_csv("data/website_data.csv")
-openai.api_key = os.getenv("OPENAI_API_KEY")
 
-system = """You are a helpful question maker for SUNY Brockport. Given some information about the school, your job is to
-parse that information and generate realistic questions a prospective student or faculty member might ask. For instance,
-"How can I apply to financial aid?" is a question a student could reasonably ask. Generate up to five of such questions and
-respond in JSON format, where "question" is one field, and "answer" is another."""
+system = """You are a helpful question maker for SUNY Brockport. Given some information about the school, your job is to parse that information and generate realistic questions a prospective student or faculty member might ask. For instance, "How can I apply to financial aid?" is a question a student could reasonably ask. Generate up to five of such questions and respond in JSON format, where "question" is one field, and "answer" is another."""
 
-prompt = lambda content: f"""Based on the content given generate questions. Think about your answer carefully before
-responding, and be sure to answer in JSON format." \n\nThe content is: \n\n{content}"""
+prompt = lambda content: """Based on the content given generate questions. Think about your answer carefully before
+responding, and be sure to answer in JSON format starting with \n```json\n[\n{\n    "question": "...",\n"answer": "..."}, ... ]```\n\n""" + f"The content is: {content}"
 
-MODEL = "gpt-3.5-turbo"         # "gpt-4-1106-preview" - model being used.
+MODEL = "gpt-4-1106-preview"    # "gpt-3.5-turbo-1106"    #  - model being used.
+FILENAME = "gpt-4-data-qa.csv"  # File name to save the data to
+SAVE_LOCATION = "data/"         # Location to save the data
 N_CONCURRENT = 64               # Number of concurrent requests
 MAX_RETRIES = 3                 # Maximum number of retries
 BASE_WAIT_TIME = 2              # Base wait time in seconds
@@ -92,7 +89,7 @@ async def main():
     )
     # Process responses...
     data['questions'] = responses
-    data.to_csv("data/web_data_with_questions.csv", index=False)
+    data.to_csv(SAVE_LOCATION+FILENAME, index=False)
 
 
 asyncio.run(main())
