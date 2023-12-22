@@ -123,6 +123,7 @@ df = df[~df['url'].str.contains('|'.join(strings_to_remove), regex=True)]
 
 print(f"Saving off full, cleaned dataset of {len(df)} webpages.")
 
-df.to_csv("data/website_data.csv", index=False)
+df.to_json("data/website_data.json", orient="records")
+# df.to_csv("data/website_data.csv", index=False)
 
 print("\nDone!")

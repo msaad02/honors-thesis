@@ -22,13 +22,19 @@ from bs4 import BeautifulSoup
 
 # ARGUMENTS
 DEPTH = 10   # Search further for links. Higher = more data, but takes more time. See README.md for more info
-WEBPAGE = "https://www2.brockport.edu" # Base webpage to search from, changing this might break things in disallow section
+WEBPAGE = "https://www2.brockport.edu" # Base webpage to search from, changing this might break disallow section
 SAVE_PATH = "data/raw_scraper_output.json" # Save location
 
 if not os.path.isdir(os.path.dirname(SAVE_PATH)):
     print("Invalid save path. Please provide a valid path.\n")
     print("I suggest you make sure that you are currently inside the data_collection directory.")
     exit()
+
+# ANSI escape codes for colors
+RED = '\033[91m'
+GREEN = '\033[92m'
+YELLOW = '\033[93m'
+ENDC = '\033[0m'
 
 # ----------------------------------------------------------------
 def create_disallow_list() -> list:
@@ -68,14 +74,14 @@ def create_disallow_list() -> list:
 if WEBPAGE == "https://www2.brockport.edu":
     disallow_list = create_disallow_list()
 else:
-    warnings.warn("Robots.txt filtering is NOT supported for non 'https://www2.brockport.edu' webpages! You may consider updating this section...")
+    warnings.warn("Robots.txt filtering is NOT supported for non 'https://www2.brockport.edu' webpages! Consider updating this section...")
     disallow_list = []
 
 # Scraping Functions---------------------------------------------------
 # To help simplify the process of scraping the website, these functions 
 # are defined to not overlap different stages of the scraping process
 
-def get_webpages(links: list) -> dict:
+def get_webpages(urls_to_get: list, urls_tried_already: list) -> tuple[dict, list]:
     """
     This function scrapes the content from a list of webpage links. Each page content is stored in a dictionary
     with the link is the key. If there is an issue while processing a link, it catches the exception, displays 
@@ -83,28 +89,34 @@ def get_webpages(links: list) -> dict:
     between 1 to 3 seconds is implemented between each request.
 
     Parameters:
-    links (list): A list of webpage URLs to scrape.
+    urls_to_get (list): A list of webpage URLs to scrape.
+    urls_tried_already (list): A list of URLs that have already been scraped to prevent duplicate requests.
 
     Returns:
     dict: A dictionary with URLs as keys and the corresponding webpage content as values.
     """
-    data = {}
+    assert(isinstance(urls_to_get, list))
+    assert(isinstance(urls_tried_already, list))
 
-    for link in tqdm(links):
+    data = {}
+    for url in tqdm(urls_to_get):
+        if url in urls_tried_already:
+            continue
+        urls_tried_already.append(url)
         time.sleep(random.uniform(1, 3))
         try:
-            with requests.get(link) as response:
+            with requests.get(url) as response:
                 if response.status_code == 200:
                     data[response.url] = response.text
+                    tqdm.write(f"{GREEN}Success! URL: {url}{ENDC}")
                 else:
-                    continue
+                    tqdm.write(f"{YELLOW}Bad status code: {response.status_code} for {url}{ENDC}")
         except Exception as e:
-            print(f"\nAn error occurred when processing {link}")
+            tqdm.write(f"{RED}An error occurred when processing {url}{ENDC}")
             time.sleep(2)
-            continue
+            pass
 
-    return data
-
+    return data, urls_tried_already
 
 def get_links_from_webpage(response) -> list:
     """
@@ -129,7 +141,7 @@ def get_links_from_webpage(response) -> list:
     links = [link for link in links if link.get('href') is not None]
     links = [link.get('href') for link in links if link.get('href').startswith('/') and '#' not in link.get('href')]
 
-    # Filter out any links that are disallowed in the robots.txt file
+    # Filter out any disallowed links
     links = [link for link in links if not any(bad_link in link for bad_link in disallow_list)]
     links = [link.rstrip('/') for link in links]
 
@@ -141,8 +153,7 @@ def get_links_from_webpage(response) -> list:
 
     return links
 
-
-def recursive_scrape(webpage: str, depth: int) -> dict:
+def recursive_scrape(webpage: str, depth: int, start: dict = {}) -> dict:
     """
     This function conducts a recursive scrape of a given webpage up to a specified depth. It begins by scraping the
     base webpage and collecting all unique links from it. Then, for each depth level, it visits the previously
@@ -153,32 +164,37 @@ def recursive_scrape(webpage: str, depth: int) -> dict:
     Parameters:
     webpage (str): The base URL from where the scrape begins.
     depth (int): The maximum depth of the recursion, i.e., how many levels deep the function will scrape from the base page.
+    start (dict): A dictionary of previously visited links and their corresponding page content. This is used to continue.
 
     Returns:
     dict: A dictionary with URLs as keys and the corresponding webpage content as values.
     """
     links_to_visit = [webpage]
-    data = {}
+    links_visited = set()
+    data = start
 
     for level in range(1, depth+1):
         print('\n\nDepth level', level, "start...")
         
         # visit only links we haven't searched before
-        links_to_visit = [link for link in links_to_visit if link not in data.keys()]
-        links_to_visit = list(set(links_to_visit))
+        links_to_visit = [link for link in links_to_visit if link not in links_visited]
 
         # add all the links_to_visit to the data
-        data.update(get_webpages(links_to_visit))
+        webpages_dict, visited = get_webpages(links_to_visit, list(links_visited))
 
-        # reset links_to_visit
-        links_to_visit = []
+        data.update(webpages_dict)
+        links_visited.update(visited)
 
         # update the links to visit
+        links_to_visit = []
         for response in data.values():
             links_to_visit.extend(get_links_from_webpage(response))
 
-    return data
+        # save intermediate results
+        with open(f"data/scraper_intermediate/depth_{level}.json", 'w') as f:
+            f.write(json.dumps(data, indent=4))
 
+    return data
 
 # --------------------------------------------------
 # Start running this thing and save it off as a JSON
