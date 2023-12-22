@@ -114,7 +114,9 @@ strings_to_remove = [
     'edu/go', 
     'edu/info', 
     'edu/quick.links', 
-    '/advancement.communications'
+    '/advancement.communications',
+    '/strategic-plan/',
+    '/strategic_plan/'
 ]
 df = df[~df['url'].str.contains('|'.join(strings_to_remove), regex=True)]
 

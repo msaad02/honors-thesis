@@ -11,9 +11,9 @@ So, what specifically does this script do?
 
 Here, we are categorizing the data into different datasets. Like I mentioned with the
 financial aid example, we want to be able to map certain questions to certain datasets.
-This script is responsible for overseeing that process by creating the datasets.
+This script is responsible for overseeing that process by creating the groups.
 
-The vision for the output of this script is a json file that looks like this:
+The output of this script is a json file that looks like this:
 
 {
     admissions: {
@@ -43,8 +43,7 @@ The vision for the output of this script is a json file that looks like this:
 If done correctly, we should be able to map any question to a specific dataset meaningfully,
 and recursively (i.e. a question about a specific major will be firsted pipe through academics, etc.)
 
-Importantly, this script is not responsible for cleaning the data. That is done in
-full_dataset_cleaning.py. This script is only responsible for categorizing the data.
+!! This script is dependent on the cleaned data, which is the output of 2_cleaning.py
 
 ------------------------------------------------------------------------------------
 # The How.
@@ -64,19 +63,23 @@ of webpages. I don't want to mix those webpages up with admissions/major2. But
 if there aren't many webpages, say less than 5, then it's not worth doing.
 """
 
-
 from collections import defaultdict
 import pandas as pd
 import json
 
-# Load the data
-df = pd.read_csv("/home/msaad/workspace/honors-thesis/data_collection/data/full_cleaned_data.csv")
+# Cleaned data from 2_cleaning.py
+df = pd.read_csv("data/website_data.csv")
+
+SAVE_NAME = "categorized_data.json" # Name of the file to save the data to
+SAVE_LOCATION = "data/"             # Location to save the data
+
+# ------------------ START OF SCRIPT -------------------
 
 # Initialize a nested dictionary to hold the categorized data
 categorized_data = defaultdict(lambda: defaultdict(dict))
 
 # Loop through each row in the DataFrame
-for idx, row in df.iterrows():
+for _, row in df.iterrows():
     url = row['url']
     data = row['data']
     
@@ -98,11 +101,10 @@ for idx, row in df.iterrows():
         categorized_data[category][url] = data
 
 # Convert to a regular dictionary and output to JSON
-final_output = json.dumps(dict(categorized_data), indent=4)
+data = json.dumps(dict(categorized_data), indent=4)
 
 # Save the JSON structure to a file
-json_file_path = '/home/msaad/workspace/honors-thesis/data_collection/data/categorized_data.json'
-with open(json_file_path, 'w') as f:
-    f.write(final_output)
+with open(SAVE_LOCATION+SAVE_NAME, 'w') as f:
+    f.write(data)
 
-json_file_path
+print("Complete!")

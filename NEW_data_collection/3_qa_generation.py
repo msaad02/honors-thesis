@@ -1,12 +1,15 @@
 """
-Creating the question/answer dataset from the cleaned data
+Creating the question/answer dataset from the cleaned data made in 2_cleaning.py
 
-We are using GPT-4 in this implementation to create questions for our dataset.
-This script parallizes 64 requests using python's asyncronous function support at
-a time to do this. We find that a rate limit of 64 requests at a time is around 
-our allowed limit, but this can change depending on prompt used, rate limit, etc.
-This could much more easily be done with a for loop, but this is significantly 
-faster. Who likes to wait?
+In this script you have the choice of using GPT-3.5 or GPT-4. GPT-3.5 is much
+faster, but GPT-4 is much more accurate. I recommend using GPT-3.5 for testing
+and GPT-4 for final results.
+
+This script parallizes 64 requests at a time using asyncronous functions. We 
+find that a rate limit of 64 requests at a time is around our allowed limit, 
+but this can change depending on prompt used, rate limit, etc. This could 
+much more easily be done with a for loop, but this is significantly faster. 
+Who likes to wait? See https://platform.openai.com/docs/guides/rate-limits
 """
 
 import pandas as pd
@@ -19,22 +22,21 @@ import time
 
 data = pd.read_csv("data/website_data.csv")
 
-system = """You are a helpful question maker for SUNY Brockport. Given some information about the school, your job is to parse that information and generate realistic questions a prospective student or faculty member might ask. For instance, "How can I apply to financial aid?" is a question a student could reasonably ask. Generate up to five of such questions and respond in JSON format, where "question" is one field, and "answer" is another."""
+system = """You are a helpful question maker for SUNY Brockport. Given some information about the school, your job is to parse that information and generate realistic questions a prospective student or faculty member might ask. For instance, "How can I apply to financial aid?" is a question a student could reasonably ask. Generate up to five of such questions and respond to those questions in JSON format, where "question" is one field, and "answer" is another. In your answers be enthusiastic about the school and try to be as helpful as possible."""
 
 # If changing prompt I highly recommend keeping the JSON specification the same. It makes parsing much easier, 
 # ESPECIALLY for GPT-3.5. From my testing, GPT-4 usually outputs this format regardless.
-prompt = lambda content: """Based on the content given generate questions. Think about your answer carefully before
-responding, and be sure to answer in JSON format starting with \n```json\n[\n{\n    "question": "...",\n"answer": "..."}, ... ]```\n\n""" + f"The content is: {content}"
+prompt = lambda content: """Based on the content given generate questions. Keep your tone optimistic and helpful. Think about your answer carefully before responding, and be sure to answer in JSON format starting with \n```json\n[\n{\n    "question": "...",\n"answer": "..."}, ... ]```\n\n""" + f"The content is: {content}"
 
 GPT = 4 # 3 is for GPT-3.5, 4 is GPT-4
 if GPT == 3:
     MODEL = "gpt-3.5-turbo-1106"
-    FILENAME = "gpt-3.5-data-qa.csv"
+    FILENAME = "gpt_3.5_data_qa.csv"
     PROMPT_COST = 0.001
     COMPLETION_COST = 0.002
 elif GPT == 4:
     MODEL = "gpt-4-1106-preview"
-    FILENAME = "gpt-4-data-qa.csv"
+    FILENAME = "gpt_4_data_qa.csv"
     PROMPT_COST = 0.01
     COMPLETION_COST = 0.03
 

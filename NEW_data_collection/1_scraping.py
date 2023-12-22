@@ -164,7 +164,7 @@ def recursive_scrape(webpage: str, depth: int, start: dict = {}) -> dict:
     Parameters:
     webpage (str): The base URL from where the scrape begins.
     depth (int): The maximum depth of the recursion, i.e., how many levels deep the function will scrape from the base page.
-    start (dict): A dictionary of previously visited links and their corresponding page content. This is used to continue.
+    start (dict): A dictionary of previously visited links and their corresponding page content. This is used to continue. Note about starting: Since we only store the "real URL", aliased URLs we were keeping track of are lost. This means that for every alias we find on the stored webpages, they'll be scraped again. This leads to a  *significant* amount of time is wasted, but is still much faster than scraping everything again. Could be fixed if this funtionality was rewritten.
 
     Returns:
     dict: A dictionary with URLs as keys and the corresponding webpage content as values.
