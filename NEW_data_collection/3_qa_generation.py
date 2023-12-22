@@ -12,6 +12,7 @@ much more easily be done with a for loop, but this is significantly faster.
 Who likes to wait? See https://platform.openai.com/docs/guides/rate-limits
 """
 
+from random import uniform
 import pandas as pd
 import os
 import time
@@ -28,22 +29,23 @@ system = """You are a helpful question maker for SUNY Brockport. Given some info
 # ESPECIALLY for GPT-3.5. From my testing, GPT-4 usually outputs this format regardless.
 prompt = lambda content: """Based on the content given generate questions. Keep your tone optimistic and helpful. Think about your answer carefully before responding, and be sure to answer in JSON format starting with \n```json\n[\n{\n    "question": "...",\n"answer": "..."}, ... ]```\n\n""" + f"The content is: {content}"
 
-GPT = 4 # 3 is for GPT-3.5, 4 is GPT-4
+GPT = 3 # 3 is for GPT-3.5, 4 is GPT-4
 if GPT == 3:
     MODEL = "gpt-3.5-turbo-1106"
     FILENAME = "gpt_3.5_data_qa.csv"
-    PROMPT_COST = 0.001
-    COMPLETION_COST = 0.002
+    PROMPT_COST = 0.001                     # Price per 1000 prompt tokens for GPT-3.5-turbo-1106 as of 12/22/2023
+    COMPLETION_COST = 0.002                 # Price per 1000 completion tokens for GPT-3.5-turbo-1106 as of 12/22/2023
+    N_CONCURRENT = 6                        # Hits the 60_000 token/min limit with >6 concurrent requests
 elif GPT == 4:
     MODEL = "gpt-4-1106-preview"
     FILENAME = "gpt_4_data_qa.csv"
-    PROMPT_COST = 0.01
-    COMPLETION_COST = 0.03
+    PROMPT_COST = 0.01                      # Price per 1000 prompt tokens for GPT-4-1106-preview as of 12/22/2023
+    COMPLETION_COST = 0.03                  # Price per 1000 completion tokens for GPT-4-1106-preview as of 12/22/2023
+    N_CONCURRENT = 16                   # ARBITRARY FOR NOW. NEEDS TESTING.
 
 SAVE_LOCATION = "data/"         # Location to save the data
-N_CONCURRENT = 64               # Number of concurrent requests
 MAX_RETRIES = 3                 # Maximum number of retries
-BASE_WAIT_TIME = 2              # Base wait time in seconds
+BASE_WAIT_TIME = 4              # Base wait time in seconds
 URL_MESSAGES = [(url, [         # List of tuples of (url, messages) to send through the API
     {"role": "system", "content": system},
     {"role": "user", "content": prompt(content)}

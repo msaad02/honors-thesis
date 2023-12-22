@@ -68,44 +68,6 @@ df = df[df.apply(lambda row: remove_excess_profile_stuff(row['url'], row['data']
 # Filter out webpages that only have a little bit of data (< 275 characters)
 df = df[df['data'].str.len() > 275]
 
-
-
-
-
-
-
-
-print("LENGTH BEFORE: ", len(df))
-
-# Sort by data then standardize and drop duplicate URLs
-# (This makes it so we prefer more data when deduping URLs)
-df.index = df['data'].str.len()
-df = df.sort_index(ascending=False).reset_index(drop=True)
-
-# Standardization. Some URLs have multiple versions.
-# Dropping "data" duplicates gets rid of 95% cases,
-# but for categorizing there are some abnormalities with
-# non-standardized URLs. Hence this standardization. 
-df['url'] = df['url'].str.replace("_", "-")
-df['url'] = df['url'].str.removesuffix(".html")
-df = df.drop_duplicates(subset=['url'])
-
-print("LENGTH AFTER: ", len(df))
-print("NOTE TO SELF: IF LENGTHS ARE EQUAL THEN YOU CAN REMOVE THIS URL STUFF. I suspect it won't be needed anymore which would be great!")
-
-
-
-
-
-
-
-
-
-
-
-# Resort by URL
-df = df.sort_values(by=['url'])
-
 # Drop rows where the URL contains any of the strings in the list
 strings_to_remove = [
     '/transfer.credit/planning.guide', 
@@ -119,7 +81,6 @@ strings_to_remove = [
     '/strategic_plan/'
 ]
 df = df[~df['url'].str.contains('|'.join(strings_to_remove), regex=True)]
-
 
 print(f"Saving off full, cleaned dataset of {len(df)} webpages.")
 
