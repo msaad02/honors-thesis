@@ -14,9 +14,9 @@ InstructorEmbedding
 sentence_transformers
 bitsandbytes
 wandb
-xformers
-ctransformers[gptq] # for exllama support
-auto-gptq
+# xformers
+ctransformers[gptq] # for exllama suspport
+# auto-gptq
 colorama
 
 # For scratch model
@@ -24,4 +24,4 @@ datasets
 matplotlib
 einops
 tensorflow_datasets
-tensorflow_text
+# tensorflow_text
