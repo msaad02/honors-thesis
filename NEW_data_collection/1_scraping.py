@@ -99,7 +99,7 @@ def get_webpages(links: list) -> dict:
                 else:
                     continue
         except Exception as e:
-            print(f"An error occurred when processing {link}")
+            print(f"\nAn error occurred when processing {link}")
             time.sleep(2)
             continue
 
