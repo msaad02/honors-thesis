@@ -35,7 +35,6 @@ def get_text(item: tuple[str, str]) -> list:
 
     return key, cleaned_html
 
-
 print("\nBegin fetching full cleaned data... This will take a little time.")
 
 # Get cleaned version of html for all data. Wrap in tqdm for progress bar.
@@ -44,7 +43,6 @@ df = pd.DataFrame(filter(lambda x: x[1] != '', map(get_text, tqdm(data.items()))
 # Drop duplicates after cleaning HTMLs for any aliased URLs that may've gotten through.
 df = df.sort_values(by=['url'])
 df = df.drop_duplicates(subset=['data'])
-
 
 # Filtering out the /live/ section
 # NOTE: /live/blurb/ might be worth keeping? It's a little different than the rest of /live/
@@ -123,7 +121,6 @@ df = df[~df['url'].str.contains('|'.join(strings_to_remove), regex=True)]
 
 print(f"Saving off full, cleaned dataset of {len(df)} webpages.")
 
-df.to_json("data/website_data.json", orient="records")
-# df.to_csv("data/website_data.csv", index=False)
+df.to_csv("data/website_data.csv", index=False)
 
 print("\nDone!")

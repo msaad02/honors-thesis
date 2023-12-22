@@ -21,11 +21,23 @@ data = pd.read_csv("data/website_data.csv")
 
 system = """You are a helpful question maker for SUNY Brockport. Given some information about the school, your job is to parse that information and generate realistic questions a prospective student or faculty member might ask. For instance, "How can I apply to financial aid?" is a question a student could reasonably ask. Generate up to five of such questions and respond in JSON format, where "question" is one field, and "answer" is another."""
 
+# If changing prompt I highly recommend keeping the JSON specification the same. It makes parsing much easier, 
+# ESPECIALLY for GPT-3.5. From my testing, GPT-4 usually outputs this format regardless.
 prompt = lambda content: """Based on the content given generate questions. Think about your answer carefully before
 responding, and be sure to answer in JSON format starting with \n```json\n[\n{\n    "question": "...",\n"answer": "..."}, ... ]```\n\n""" + f"The content is: {content}"
 
-MODEL = "gpt-4-1106-preview"    # "gpt-3.5-turbo-1106"    #  - model being used.
-FILENAME = "gpt-4-data-qa.csv"  # File name to save the data to
+GPT = 4 # 3 is for GPT-3.5, 4 is GPT-4
+if GPT == 3:
+    MODEL = "gpt-3.5-turbo-1106"
+    FILENAME = "gpt-3.5-data-qa.csv"
+    PROMPT_COST = 0.001
+    COMPLETION_COST = 0.002
+elif GPT == 4:
+    MODEL = "gpt-4-1106-preview"
+    FILENAME = "gpt-4-data-qa.csv"
+    PROMPT_COST = 0.01
+    COMPLETION_COST = 0.03
+
 SAVE_LOCATION = "data/"         # Location to save the data
 N_CONCURRENT = 64               # Number of concurrent requests
 MAX_RETRIES = 3                 # Maximum number of retries
@@ -88,10 +100,31 @@ async def main():
         model=MODEL
     )
     # Process responses...
-    data['questions'] = responses
-    data.to_csv(SAVE_LOCATION+FILENAME, index=False)
+    data['api_res'] = responses
 
+    try: 
+        # This parses the API outputs and gets the actual JSON output
+        api_responses = [json.loads(api_res)['choices'][0]['message']['content'] for api_res in data['api_res']]
+        data['questions'] = [json.dumps(json.loads(api_output.strip()[7:-3])) for api_output in api_responses]
+    except Exception as e:
+        print(f"Error parsing API JSON responses: {e}")
+        pass
+
+    try:
+        # Get cost for the run using the number of tokens used
+        total_prompt_tokens = sum([json.loads(api_res)['usage']['prompt_tokens'] for api_res in data['api_res']])
+        total_completion_tokens = sum([json.loads(api_res)['usage']['completion_tokens'] for api_res in data['api_res']])
+
+        total_cost = PROMPT_COST * (total_prompt_tokens/1000) + COMPLETION_COST * (total_completion_tokens/1000)
+        print(f"\nTotal cost: ${total_cost:.4f}")
+    except Exception as e:
+        print(f"Error getting cost: {e}")
+        pass
+
+    # Save the data
+    data.to_csv(SAVE_LOCATION+FILENAME, index=False)
+    print(f"Saved data to {SAVE_LOCATION+FILENAME}!")
 
 asyncio.run(main())
 
-print("--- %s seconds ---" % (time.time() - start_time))
+print("\n--- %s seconds ---" % (time.time() - start_time))
