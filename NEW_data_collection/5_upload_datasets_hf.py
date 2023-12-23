@@ -23,18 +23,47 @@ import re
 from itertools import chain
 import random
 import json
+import os
 
 RAW_SCRAPER_OUTPUT = "data/raw_scraper_output.json"
 GPT_3_5_DATA_QA = "data/gpt_3.5_data_qa.csv"
 GPT_4_DATA_QA = "data/gpt_4_data_qa.csv"
 CATEGORIZED_DATA = "data/categorized_data.json"
 
+# ---------------------------------------------------------- #
 # 1 - Upload raw scraper output
 
-# Need to adjust the format of the raw scraper output to be a list of dictionaries first.
+# To accomodate the huggingface dataset object, we need to convert the raw scraper output
+# from a dictionary to a list of dictionaries
+with open(RAW_SCRAPER_OUTPUT) as f:
+    raw_scraper_output = json.load(f)
+    
+raw_scraper_output_hf = [{k: raw_scraper_output[k]} for k in raw_scraper_output.keys()]
 
+with open("data/TEMP_raw_scraper_output_hf.json", "w") as f:
+    json.dump(raw_scraper_output_hf, f)
 
+# Upload to huggingface hub
+dataset = load_dataset("json", data_files="data/TEMP_raw_scraper_output_hf.json")
+dataset.push_to_hub("msaad02/raw-scraper-output")
 
+# remove the hf file
+os.remove("data/TEMP_raw_scraper_output_hf.json")
+
+# ---------------------------------------------------------- #
+# 2 - Upload GPT-3.5 data
+
+dataset = load_dataset("csv", data_files=GPT_3_5_DATA_QA)
+dataset.push_to_hub("msaad02/gpt-3.5-data-qa")
+
+# ---------------------------------------------------------- #
+# 3 - Upload GPT-4 data
+
+dataset = load_dataset("csv", data_files=GPT_4_DATA_QA)
+dataset.push_to_hub("msaad02/gpt-4-data-qa")
+
+# ---------------------------------------------------------- #
+# 4 - Upload categorized data
 
 
 
