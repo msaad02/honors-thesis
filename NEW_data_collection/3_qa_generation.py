@@ -12,7 +12,6 @@ much more easily be done with a for loop, but this is significantly faster.
 Who likes to wait? See https://platform.openai.com/docs/guides/rate-limits
 """
 
-from random import uniform
 import pandas as pd
 import os
 import time
@@ -29,23 +28,26 @@ system = """You are a helpful question maker for SUNY Brockport. Given some info
 # ESPECIALLY for GPT-3.5. From my testing, GPT-4 usually outputs this format regardless.
 prompt = lambda content: """Based on the content given generate questions. Keep your tone optimistic and helpful. Think about your answer carefully before responding, and be sure to answer in JSON format starting with \n```json\n[\n{\n    "question": "...",\n"answer": "..."}, ... ]```\n\n""" + f"The content is: {content}"
 
-GPT = 3 # 3 is for GPT-3.5, 4 is GPT-4
+GPT = 4 # 3 is for GPT-3.5, 4 is GPT-4
 if GPT == 3:
     MODEL = "gpt-3.5-turbo-1106"
     FILENAME = "gpt_3.5_data_qa.csv"
     PROMPT_COST = 0.001                     # Price per 1000 prompt tokens for GPT-3.5-turbo-1106 as of 12/22/2023
     COMPLETION_COST = 0.002                 # Price per 1000 completion tokens for GPT-3.5-turbo-1106 as of 12/22/2023
-    N_CONCURRENT = 6                        # Hits the 60_000 token/min limit with >6 concurrent requests
+    N_CONCURRENT = 14                       # My limit is 160_000 token/min, so 14 concurrent requests works well
 elif GPT == 4:
     MODEL = "gpt-4-1106-preview"
     FILENAME = "gpt_4_data_qa.csv"
     PROMPT_COST = 0.01                      # Price per 1000 prompt tokens for GPT-4-1106-preview as of 12/22/2023
     COMPLETION_COST = 0.03                  # Price per 1000 completion tokens for GPT-4-1106-preview as of 12/22/2023
-    N_CONCURRENT = 16                   # ARBITRARY FOR NOW. NEEDS TESTING.
+    N_CONCURRENT = 20                       # My limit is 300_000 token/min limit (+ it's slower), so we can do 25 concurrent requests
 
 SAVE_LOCATION = "data/"         # Location to save the data
 MAX_RETRIES = 3                 # Maximum number of retries
-BASE_WAIT_TIME = 4              # Base wait time in seconds
+BASE_WAIT_TIME = 6              # Base wait time in seconds
+
+# data = data.sample(n=30)      # Sample the data (for testing)
+
 URL_MESSAGES = [(url, [         # List of tuples of (url, messages) to send through the API
     {"role": "system", "content": system},
     {"role": "user", "content": prompt(content)}
@@ -53,7 +55,7 @@ URL_MESSAGES = [(url, [         # List of tuples of (url, messages) to send thro
 
 start_time = time.time()
 
-async def async_openai_chat_call(client, messages, url, model, retries=0):
+async def async_openai_chat_call(client: httpx.AsyncClient, messages, url, model, retries=0):
     "Async function to make a single OpenAI Chat API call"
     async_start_time = time.time()
     try:
@@ -96,6 +98,17 @@ async def make_concurrent_chat_calls(messages_list, n_concurrent, model):
         responses = await gather_with_limit(n_concurrent, *tasks)
         return responses
     
+def parse_output_for_questions(api_res):
+    "Function to parse the API output for questions"
+    try:
+        response = json.loads(api_res)['choices'][0]['message']['content']
+        # Remomove first 7 and last 3 (they are "```json" and "```" respectively), then standardize the jsons
+        questions = json.dumps(json.loads(response.strip()[7:-3]))
+    except:
+        # If there is an error (hallucination most likely), return None
+        questions = None
+    return questions
+
 async def main():
     "Main async function to make concurrent OpenAI Chat API calls"
     responses = await make_concurrent_chat_calls(
@@ -106,18 +119,18 @@ async def main():
     # Process responses...
     data['api_res'] = responses
 
-    try: 
-        # This parses the API outputs and gets the actual JSON output
-        api_responses = [json.loads(api_res)['choices'][0]['message']['content'] for api_res in data['api_res']]
-        data['questions'] = [json.dumps(json.loads(api_output.strip()[7:-3])) for api_output in api_responses]
-    except Exception as e:
-        print(f"Error parsing API JSON responses: {e}")
-        pass
+    # If *somehow* the following crashes, the raw API responses are saved to a csv. This stuff gets expensive!
+    # However, everything is wrapped in try/except blocks so it should be fine.
+    data.to_csv(SAVE_LOCATION+"TEMP_GPT_GENERATED_DATA.csv", index=False)
+
+    # This parses the API outputs and gets the actual JSON output
+    data['questions'] = data['api_res'].apply(parse_output_for_questions)
 
     try:
         # Get cost for the run using the number of tokens used
-        total_prompt_tokens = sum([json.loads(api_res)['usage']['prompt_tokens'] for api_res in data['api_res']])
-        total_completion_tokens = sum([json.loads(api_res)['usage']['completion_tokens'] for api_res in data['api_res']])
+        not_null_api_responses = data[data['api_res'].notnull()]['api_res']
+        total_prompt_tokens = sum([json.loads(api_res)['usage']['prompt_tokens'] for api_res in not_null_api_responses])
+        total_completion_tokens = sum([json.loads(api_res)['usage']['completion_tokens'] for api_res in not_null_api_responses])
 
         total_cost = PROMPT_COST * (total_prompt_tokens/1000) + COMPLETION_COST * (total_completion_tokens/1000)
         print(f"\nTotal cost: ${total_cost:.4f}")
