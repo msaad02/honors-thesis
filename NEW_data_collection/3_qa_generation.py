@@ -19,6 +19,12 @@ import json
 import asyncio
 import httpx
 import time
+from tqdm.asyncio import tqdm_asyncio
+
+# MAIN PARAMETERS. These are main the only parameters you need to change.
+
+GPT = 4 # (3/4): Selects model used. 3 is for GPT-3.5, 4 is for GPT-4
+FINSIH_PREV_RUN = True # (True/False) Set to True if you want to start where left off, which is especially useful if using a model with a TPD (token per day) limit and you hit it. You can just restart where you left off. (It just runs the script on the data that doesn't have an API response yet.)
 
 data = pd.read_csv("data/website_data.csv")
 
@@ -28,7 +34,6 @@ system = """You are a helpful question maker for SUNY Brockport. Given some info
 # ESPECIALLY for GPT-3.5. From my testing, GPT-4 usually outputs this format regardless.
 prompt = lambda content: """Based on the content given generate questions. Keep your tone optimistic and helpful. Think about your answer carefully before responding, and be sure to answer in JSON format starting with \n```json\n[\n{\n    "question": "...",\n"answer": "..."}, ... ]```\n\n""" + f"The content is: {content}"
 
-GPT = 4 # 3 is for GPT-3.5, 4 is GPT-4
 if GPT == 3:
     MODEL = "gpt-3.5-turbo-1106"
     FILENAME = "gpt_3.5_data_qa.csv"
@@ -40,11 +45,17 @@ elif GPT == 4:
     FILENAME = "gpt_4_data_qa.csv"
     PROMPT_COST = 0.01                      # Price per 1000 prompt tokens for GPT-4-1106-preview as of 12/22/2023
     COMPLETION_COST = 0.03                  # Price per 1000 completion tokens for GPT-4-1106-preview as of 12/22/2023
-    N_CONCURRENT = 20                       # My limit is 300_000 token/min limit (+ it's slower), so we can do 25 concurrent requests
+    N_CONCURRENT = 20                       # My limit is 300_000 token/min limit, so 20 concurrent requests works well
 
 SAVE_LOCATION = "data/"         # Location to save the data
-MAX_RETRIES = 3                 # Maximum number of retries
-BASE_WAIT_TIME = 6              # Base wait time in seconds
+MAX_RETRIES = 2                 # Maximum number of retries
+BASE_WAIT_TIME = 4             # Base wait time in seconds
+
+if FINSIH_PREV_RUN:
+    # If you want to start where you left off, set FINSIH_PREV_RUN to True
+    data = pd.read_csv(SAVE_LOCATION+FILENAME)
+    data = data.loc[data['questions'].isnull(), ['url', 'data']]
+    print(f"Starting where left off. {len(data)} rows left to process.")
 
 # data = data.sample(n=30)      # Sample the data (for testing)
 
@@ -68,17 +79,20 @@ async def async_openai_chat_call(client: httpx.AsyncClient, messages, url, model
         response.raise_for_status()  # Raise an exception for HTTP error codes
         response = response.json()
         duration = time.time() - async_start_time
-        print(f"Success! Complete in {duration:.2f}s with {response['usage']['total_tokens']} tokens for {url}")
+        tqdm_asyncio.write(f"Success! Complete in {duration:.2f}s with {response['usage']['total_tokens']} tokens for {url}")
+        # print(f"Success! Complete in {duration:.2f}s with {response['usage']['total_tokens']} tokens for {url}")
         return json.dumps(response)
     except Exception as e:
         # Try again if we haven't reached the maximum number of retries
         if retries < MAX_RETRIES:
             wait_time = BASE_WAIT_TIME * (2 ** retries)  # Exponential backoff
-            print(f"Error for {url}: {e}. Retrying in {wait_time} seconds...")
+            tqdm_asyncio.write(f"Error for {url}: {e}. Retrying in {wait_time} seconds...")
+            # print(f"Error for {url}: {e}. Retrying in {wait_time} seconds...")
             await asyncio.sleep(wait_time)
             return await async_openai_chat_call(client, messages, url, model, retries + 1)
         else:
-            print(f"Failed after {MAX_RETRIES} retries for {url}: {e}")
+            tqdm_asyncio.write(f"Failed after {MAX_RETRIES} retries for {url}: {e}")
+            # print(f"Failed after {MAX_RETRIES} retries for {url}: {e}")
             return None  # Or handle the failure in some other way
 
 # Inspiration: https://stackoverflow.com/questions/48483348/how-to-limit-concurrency-with-python-asyncio
@@ -89,7 +103,8 @@ async def gather_with_limit(n, *coros):
     async def sem_coro(coro):
         async with semaphore:
             return await coro
-    return await asyncio.gather(*(sem_coro(c) for c in coros))
+        # replaced asyncio with tqdm_asyncio
+    return await tqdm_asyncio.gather(*(sem_coro(c) for c in coros))
 
 async def make_concurrent_chat_calls(messages_list, n_concurrent, model):
     "Async function to make concurrent OpenAI Chat API calls"
@@ -109,7 +124,7 @@ def parse_output_for_questions(api_res):
         questions = None
     return questions
 
-async def main():
+async def main(data):
     "Main async function to make concurrent OpenAI Chat API calls"
     responses = await make_concurrent_chat_calls(
         messages_list=URL_MESSAGES, 
@@ -138,10 +153,16 @@ async def main():
         print(f"Error getting cost: {e}")
         pass
 
+    if FINSIH_PREV_RUN:
+        # This inserts our new data into the old data if we are continuing from a previous run
+        old_data = pd.read_csv(SAVE_LOCATION+FILENAME)
+        old_data.loc[old_data['questions'].isnull()] = data
+        data = old_data
+
     # Save the data
     data.to_csv(SAVE_LOCATION+FILENAME, index=False)
     print(f"Saved data to {SAVE_LOCATION+FILENAME}!")
 
-asyncio.run(main())
+asyncio.run(main(data))
 
 print("\n--- %s seconds ---" % (time.time() - start_time))

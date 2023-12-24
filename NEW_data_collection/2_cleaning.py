@@ -82,6 +82,8 @@ strings_to_remove = [
 ]
 df = df[~df['url'].str.contains('|'.join(strings_to_remove), regex=True)]
 
+df = df[df['url'].str.startswith("https://www2.brockport.edu/")]
+
 print(f"Saving off full, cleaned dataset of {len(df)} webpages.")
 
 df.to_csv("data/website_data.csv", index=False)

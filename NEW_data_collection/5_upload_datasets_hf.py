@@ -17,38 +17,29 @@ of questions and answers from the GPT-3.5 and GPT-4 generated datasets. These ar
 
 # NOTE: May need to login to huggingfacehub if you want to push to hub
 
-from datasets import load_dataset
-import pickle
-import re
-from itertools import chain
-import random
+from datasets import load_dataset, Dataset
+import pandas as pd
 import json
-import os
 
 RAW_SCRAPER_OUTPUT = "data/raw_scraper_output.json"
 GPT_3_5_DATA_QA = "data/gpt_3.5_data_qa.csv"
 GPT_4_DATA_QA = "data/gpt_4_data_qa.csv"
-CATEGORIZED_DATA = "data/categorized_data.json"
+CATEGORIZED_DATA = "data/categorized_data.csv"
 
 # ---------------------------------------------------------- #
 # 1 - Upload raw scraper output
 
-# To accomodate the huggingface dataset object, we need to convert the raw scraper output
-# from a dictionary to a list of dictionaries
+# To accomodate the huggingface dataset library we need to convert the raw scraper output
 with open(RAW_SCRAPER_OUTPUT) as f:
     raw_scraper_output = json.load(f)
-    
-raw_scraper_output_hf = [{k: raw_scraper_output[k]} for k in raw_scraper_output.keys()]
 
-with open("data/TEMP_raw_scraper_output_hf.json", "w") as f:
-    json.dump(raw_scraper_output_hf, f)
+raw_scraper_output_df = pd.DataFrame({
+    'url': [k for k in raw_scraper_output.keys()],
+    'data': [raw_scraper_output[k] for k in raw_scraper_output.keys()]
+})
 
-# Upload to huggingface hub
-dataset = load_dataset("json", data_files="data/TEMP_raw_scraper_output_hf.json")
+dataset = Dataset.from_pandas(raw_scraper_output_df)
 dataset.push_to_hub("msaad02/raw-scraper-output")
-
-# remove the hf file
-os.remove("data/TEMP_raw_scraper_output_hf.json")
 
 # ---------------------------------------------------------- #
 # 2 - Upload GPT-3.5 data
@@ -65,55 +56,42 @@ dataset.push_to_hub("msaad02/gpt-4-data-qa")
 # ---------------------------------------------------------- #
 # 4 - Upload categorized data
 
-
-
-
-exit()
-
-# NOTE: May need to login to huggingfacehub if you want to push to hub
-push_preformatted_dataset_to_hub = False     # Set true if you want to push the preformatted dataset to huggingface hub
-push_formatted_dataset_to_hub = False          # Set true if you want to push the formatted dataset to huggingface hub
-
-# Define names IF pushing to hub
-preformatted_dataset_name = "msaad02/preformat-ss-cleaned-brockport-qa"     
-formatted_dataset_name = "msaad02/formatted-ss-cleaned-brockport-qa"        
-
-# JSON file name
-json_file_name = "/home/msaad/workspace/honors-thesis/data_collection/data/cleaned_ss_dataset.json"
-
-
-generate_json(small_dataset)
+dataset = load_dataset("csv", data_files=CATEGORIZED_DATA)
+dataset.push_to_hub("msaad02/categorized-data")
 
 # ---------------------------------------------------------- #
-# Formatting the responses for the dataset for training step #
+# 5 - Upload full lists of questions and answers
+
+def get_qa_dataset(df: pd.DataFrame) -> Dataset:
+    """
+    Creates a huggingface dataset from the outfiles of 3_qa_generation.py.
+
+    Note that this ignores null API responses.
+    """
+    questions = []
+    for _, row in df.loc[df['questions'].notnull(), ['url', 'questions']].iterrows():
+        url, question = row['url'], row['questions']
+
+        list_of_questions = json.loads(question)
+        list_of_questions = [{
+            'url': url, 
+            'question': q['question'], 
+            'answer': q['answer']
+        } for q in list_of_questions]
+
+        questions.extend(list_of_questions)
+
+    dataset = Dataset.from_list(questions)
+    return dataset
+
+# GPT-3.5
+gpt35_dataset = get_qa_dataset(pd.read_csv(GPT_3_5_DATA_QA))
+gpt35_dataset.push_to_hub("msaad02/brockport-gpt-3.5-qa")
+
+# GPT-4
+gpt4_dataset = get_qa_dataset(pd.read_csv(GPT_4_DATA_QA))
+gpt4_dataset.push_to_hub("msaad02/brockport-gpt-4-qa")
+
 # ---------------------------------------------------------- #
 
-# Load in the JSON dataset as a hugginface dataset object
-dataset = load_dataset("json", data_files=json_file_name)
-
-
-if push_preformatted_dataset_to_hub:
-    dataset.push_to_hub(preformatted_dataset_name)
-
-def format_prompt(example):
-    """
-    Format the prompt of the model. Expects huggingface dataset object input with 2 fields: instruction and output.
-    """
-    prompt = f"""Below is an inquiery related to SUNY Brockport - from academics, admissions, and faculty support to student life. Prioritize accuracy and brevity."
-
-### Instruction:
-{example['instruction']}
-
-### Response:
-{example['output']}"""
-
-    return {'text': prompt}
-
-# Map format_prompt on inputs
-dataset = dataset.map(format_prompt, remove_columns=['instruction', 'output'])
-
-if push_formatted_dataset_to_hub:
-    dataset.push_to_hub(formatted_dataset_name)
-
-# Sanity check
-print(dataset['train']['text'][0])
+print("All datasets uploaded to huggingface!")
