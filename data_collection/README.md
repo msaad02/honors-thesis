@@ -1,8 +1,10 @@
 # Data Collection
 
-This step is crucial and will ultimately decide the success, or failure of this project. Despite the increasigly sophisticated language models of our day, when it comes to AI and machine learning there is one rule above the rest:  Garbage in, garbage out. For this reason, the data collected and ultimately generated for this project needs to be contextually relevant, and deliver good examples for the models to use from the perspective of prospective students, current students, and faculty alike.
+This step is crucial and will ultimately decide the success, or failure of this project. Despite the increasigly sophisticated language models of our day, when it comes to machine learning there is one rule above the rest:  Garbage in, garbage out. For this reason, the data collected and ultimately generated for this project needs to be contextually relevant, and deliver good examples for the models to use from the perspective of prospective students, current students, and faculty alike.
 
-The primary source of data at our disposal comes directly from the SUNY Brockport website (https://www2.brockport.edu). It may be possible, if necessary, to request more information from the relevant people, but this shuld be adequate. 
+The primary source of data at our disposal comes directly from the SUNY Brockport website (https://www2.brockport.edu). It may be possible, if necessary, to request more information from the relevant people, but this should be adequate. 
+
+**NOTE:** *Files in this directory are labeled 1,2,3, etc. to indicate the order in which they should be run since they are dependent on each other.*
 
 ---
 ## Scraping Brockport Website
