@@ -15,3 +15,6 @@ fine_tuning/__pycache__
 scratch_model/scratch-model-*
 scratch_model/__pycache__
 scratch_model/models
+
+# mac specific?
+.DS_Store
