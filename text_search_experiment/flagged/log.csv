@@ -1,0 +1,19 @@
+question,output,flag,username,timestamp
+,"'    Predicted Category: admissions
+
+    Probability Distribution:
+    {
+    ""alumni"": 0.62,
+    ""support"": 0.74,
+    ""admissions"": 86.43,
+    ""scholarships-aid"": 0.51,
+    ""about"": 0.93,
+    ""academics"": 4.36,
+    ""live"": 1.91,
+    ""bsg"": 0.69,
+    ""library"": 0.75,
+    ""research-foundation"": 0.71,
+    ""graduate"": 1.04,
+    ""life"": 1.32
+}
+    ",,,2023-12-25 18:24:53.103615
