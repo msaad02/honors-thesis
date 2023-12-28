@@ -12,7 +12,10 @@ fine_tuning/wandb
 scratch_model/scratch-model-*
 scratch_model/models
 
-# mac specific?
+# text_search folder
+subcat_models
+
+# mac specific
 .DS_Store
 
 # other

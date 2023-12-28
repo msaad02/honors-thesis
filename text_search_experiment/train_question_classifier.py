@@ -159,6 +159,7 @@ classification_rep = classification_report(y_test.cpu(), predicted.cpu())
 # Write the results to the file
 with open(output_file, 'w') as f:
     f.write("Model Evaluation Results on Test Data:\n\n")
+    f.write("Keep in mind that data leakage may have occurred during training due to oversampling.\n\n")
     f.write(f"Accuracy: {accuracy * 100:.2f}%\n")
     f.write("Confusion Matrix:\n")
     f.write(np.array2string(confusion_mat, separator=', ') + "\n\n")
