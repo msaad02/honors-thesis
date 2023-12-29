@@ -21,3 +21,4 @@ subcat_models
 # other
 __pycache__
 model
+embeddings.pickle
