@@ -10,6 +10,8 @@ The output of this file is a directory called "model" that contains the followin
 - hyperparameters.json: a dictionary containing the hyperparameters used to train the model
 
 The model can be used for inference by using the `QuestionClassifier` class from question_classifier.py
+
+NOTE: There is a data leakage issue in this script so the accuracy numbers are inflated if training on partial data. 
 """
 
 from sklearn.feature_extraction.text import CountVectorizer
@@ -30,6 +32,11 @@ LEARNING_RATE = 0.0001
 HIDDEN_DIM = 256
 DROPOUT = 0.5
 SAVE_DIR = "model/"
+
+# proportion of data to use for training/validation/testing.
+# This is set to 0.8/0.1/0.1 for creating the final model
+train_proportion = 0.8
+validation_prop = 0.1
 
 # check SAVE_DIR exists
 if not os.path.exists(SAVE_DIR):
@@ -60,8 +67,6 @@ int_to_text = {idx: text for text, idx in text_to_int.items()}
 
 train_df['category_vect'] = train_df['category'].apply(lambda x: text_to_int[x])
 
-train_proportion = 0.8
-validation_prop = 0.1
 train_size = int(train_proportion * train_vect.shape[0])
 validation_size = int(validation_prop * train_vect.shape[0])
 end_validation_size = train_size + validation_size

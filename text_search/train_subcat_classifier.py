@@ -52,6 +52,10 @@ HIDDEN_DIM = 256
 DROPOUT = 0.5
 BASE_SAVE_DIR = "subcat_models/"
 
+# proportion of data to use for training/validation/testing.
+train_proportion = 0.7
+validation_prop = 0.15
+
 # check SAVE_DIR exists
 if not os.path.exists(BASE_SAVE_DIR):
     os.makedirs(BASE_SAVE_DIR)
@@ -104,8 +108,6 @@ for category in categories_to_model:
     SAMPLE_SIZE = int(avg_qa_count)*3
 
     # But first, we need to take out the training and validation data so that we don't cause data leakage
-    train_proportion = 0.7
-    validation_prop = 0.1
     train_size = int(train_proportion * len(train_df))
     validation_size = int(validation_prop * len(train_df))
     end_validation_size = train_size + validation_size
@@ -253,6 +255,7 @@ for category in categories_to_model:
     plt.legend()
     plt.savefig(f'{SAVE_DIR}loss_plot.png')
     plt.show()
+    plt.close()
 
     # Save the model
     torch.save(model.state_dict(), f'{SAVE_DIR}category_classifier_model.pth')
