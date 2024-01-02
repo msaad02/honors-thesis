@@ -45,6 +45,7 @@ class TextRetriever:
             self, 
             main_categorization_model_dir: str = "model",
             subcategorization_model_dir: str = "subcat_models/",
+            embeddings_file: str = "embeddings.pickle",
             device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
             question_classifier: bool = True
         ):
@@ -60,7 +61,7 @@ class TextRetriever:
 
         # Get embeddings and model
         self.embedding_model = SentenceTransformer('BAAI/bge-large-en-v1.5')
-        embeddings = pickle.load(open("embeddings.pickle", "rb"))
+        embeddings = pickle.load(open(embeddings_file, "rb"))
         self.embeddings = embeddings['embeddings']
         self.data = embeddings['data']
 
