@@ -8,8 +8,6 @@ It is mainly split into two parts:
 Importantly, in the second part, we are storing everything in a specific way
 so that we can easily access the embeddings for each category and subcategory,
 as well as the underlying data that was used to create the embeddings.
-
-
 """
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
