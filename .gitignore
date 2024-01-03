@@ -22,3 +22,4 @@ subcat_models
 __pycache__
 model
 embeddings.pickle
+.vscode

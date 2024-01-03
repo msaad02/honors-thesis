@@ -38,7 +38,7 @@ class FineTunedEngine():
 
         If using GGUF, you can optionally specify the model file (quant) to use.
         See huggingface repo at https://huggingface.co/msaad02/llama2_7b_brockportgpt_gguf
-        for the full list of options. I recomment using default (q4_1.gguf) for CPU usage.
+        for the full list of options. I recommend using default (q4_1.gguf) for CPU usage.
 
         Set stream to True to print the model's output as it's being generated.
         stream is only supported for print to console, not for writing to file.

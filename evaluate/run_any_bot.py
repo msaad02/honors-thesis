@@ -14,8 +14,8 @@ from colorama import init as colorama_init
 from colorama import Fore, Style
 colorama_init()
 
-from chatgpt_pe.categorized_engine import QuestionAnswering
-from chatgpt_pe.rag_engine import TraditionalRAGEngine
+from chatgpt_pe.old.categorized_engine import QuestionAnswering
+from chatgpt_pe.old.rag_engine import TraditionalRAGEngine
 from fine_tuning.finetune_engine import FineTunedEngine
 from scratch_model.scratch_model_engine import ScratchModelEngine
 

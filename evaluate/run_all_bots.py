@@ -16,8 +16,8 @@ import json
 from tqdm import tqdm
 from torch.cuda import is_available
 
-from chatgpt_pe.categorized_engine import QuestionAnswering
-from chatgpt_pe.rag_engine import TraditionalRAGEngine
+from chatgpt_pe.old.categorized_engine import QuestionAnswering
+from chatgpt_pe.old.rag_engine import TraditionalRAGEngine
 from fine_tuning.finetune_engine import FineTunedEngine
 from scratch_model.scratch_model_engine import ScratchModelEngine
 

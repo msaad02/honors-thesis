@@ -6,6 +6,7 @@ We will use the search engine from `text_search/text_retriever.py` to retrieve a
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../text_search')))
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 from text_retriever import TextRetriever
 from openai import OpenAI
@@ -25,33 +26,27 @@ class RAG():
             subcategorization_model_dir=subcategorization_model_dir,
             embeddings_file=embeddings_file
         )
+        self.client = OpenAI()
 
-        if system_prompt is None:
-            self.system = """You are a helpful chatbot for SUNY Brockport. You will be given information about questions people have asked about the school. Your job is to parse that information and generate realistic responses to those questions. Be enthusiastic, straightforward, and brief in your responses. Do not answer questions unrelated to SUNY Brockport, or questions that cannot be answered based on the information given."""
-        else:
-            self.system = system_prompt
+        self.system = """You are a helpful chatbot for SUNY Brockport who answers questions using the context given. Be enthusiastic, straightforward, and brief in your responses. Do not answer questions unrelated to SUNY Brockport, or questions that cannot be answered based on the information given. You do not have to address all parts of the context, just the most relevant information.For "does xyz exist" questions, if xyz is not in the information, then say xyz does not exist.""" if system_prompt is None else system_prompt
 
-        if prompt is None:
-            self.prompt = lambda context, question: f"Context: {context}\n\nQuestion: {question}"
-        else:
-            self.prompt = prompt
+        self.prompt = lambda context, question: f"Context: {context}\n\nQuestion: {question}" if prompt is None else prompt
 
 
-
-    def generate(self, question):
+    def generate(self, question, return_context: bool=False):
         """
         Generate a response to a query.
 
         Args:
             query (str): The query to respond to.
+            return_context (bool, optional): Whether or not to return the context. Defaults to False.
 
         Returns:
             str: The response to the query.
         """
         context = self.retriever.retrieve(question)
 
-        client = OpenAI()
-        response = client.chat.completions.create(
+        response = self.client.chat.completions.create(
             model="gpt-3.5-turbo-1106",
             messages=[
                 {"role": "system", "content": self.system},
@@ -64,4 +59,7 @@ class RAG():
             presence_penalty=0.2
         )
 
-        return response
+        if return_context:
+            return response.model_dump()['choices'][0]['message']['content'], context
+        else:
+            return response.model_dump()['choices'][0]['message']['content']
