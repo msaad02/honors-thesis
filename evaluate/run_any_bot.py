@@ -17,7 +17,7 @@ colorama_init()
 from chatgpt_pe.old.categorized_engine import QuestionAnswering
 from chatgpt_pe.old.rag_engine import TraditionalRAGEngine
 from fine_tuning.finetune_engine import FineTunedEngine
-from scratch_model.scratch_model_engine import ScratchModelEngine
+from scratch_model.run_scratch_model import ScratchModelEngine
 
 bot_options_dict = {
     "1": "Categorized QA",

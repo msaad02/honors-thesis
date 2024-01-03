@@ -1,5 +1,7 @@
 # Scratch Model
 
+184M parameter transformer model.
+
 # IDEA
 Make it like GPT, by training on all data from website then finetune on the QA dataset?
 

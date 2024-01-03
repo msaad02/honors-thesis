@@ -1,18 +1,21 @@
-# I need to make a tf.data pipeline. I have a huggingface dataset, so I need to convert it somehow.
-# Huggingface has tools built in to convert to tf.data, but I don't think they're exactly what I want.
-# I think I might just try and breakdown the huggingface dataset to standard python objects to convert it all.
+"""
+This script creates a tensorflow dataset for the brockport-gpt-4-qa dataset to feed into the model.
+
+This also does some preprocessing of the data, such as adding start and end tokens, and standardizing the text.
+"""
 
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # stop showing tensorflow logs...
-
 from datasets import load_dataset
 import tensorflow as tf
 import numpy as np
 
-dataset_name = "msaad02/formatted-ss-cleaned-brockport-qa"
-dataset = load_dataset(dataset_name, split="train")
+dataset = load_dataset("msaad02/brockport-gpt-4-qa")
+dataset = dataset['train'].to_pandas()
 
-dataset = dataset.to_dict()['text']
+prompt = lambda question, answer: f"""Below is an inquiery related to SUNY Brockport - from academics, admissions, and faculty support to student life. Prioritize accuracy and brevity.\n\n### Instruction:\n{question}\n\n### Response:\n{answer}"""
+
+dataset = [prompt(question, answer) for question, answer in zip(dataset['question'], dataset['answer'])]
 
 def split_input_output(s):
     """
@@ -38,13 +41,7 @@ def get_datasets(batch_size: int = 64):
     """
     Return train_ds, val_ds, and text_processor
     """
-    # Map above function over the list of questions, and create a list of questions and answers separately
     context_raw, target_raw = [list(t) for t in zip(*[split_input_output(string) for string in dataset])]
-
-    # NOTE: Chosing to follow the naming conventions from the tutorial, for reference then:
-    # CONTEXT refers to QUESTIONS, and TARGET refers to ANSWERS
-
-    # "Raw" is used since currently the data is in string format, and needs to be standardized and vectorized
 
     BUFFER_SIZE = len(context_raw)
     BATCH_SIZE = batch_size
