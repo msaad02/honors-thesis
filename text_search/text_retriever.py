@@ -155,14 +155,17 @@ class TextRetriever:
         else:
             return text_retreival_places
 
-    def _semantic_search(self, question: str, top_n: int = 25, metadata: bool = False):
+    def _semantic_search(self, question: str, top_n: int = 25, metadata: bool = False, callback_all_categories: bool = False):
         """
         This uses the output from `_get_text_retrieval_places` to do semantic search on the text.
 
         It returns the `top_n` results from the semantic search. The output of this function is a dataframe
         containing the text and the semantic similarity score - higher is better.
         """
-        text_retrieval_places = self._get_text_retrieval_places(question, metadata=metadata)
+        if not callback_all_categories:
+            text_retrieval_places = self._get_text_retrieval_places(question, metadata=metadata)
+        else:
+            text_retrieval_places = self._get_text_retrieval_places("", metadata=metadata)
 
         if metadata:
             text_retrieval_places, metadata_dict = text_retrieval_places
@@ -183,7 +186,11 @@ class TextRetriever:
                 text_embedding_for_question.extend(self.embeddings[subcategory])
                 raw_text_for_question.extend(self.data[subcategory])
 
-        corpus_embeddings = np.stack(text_embedding_for_question)
+        try:
+            corpus_embeddings = np.stack(text_embedding_for_question)
+        except:
+            Warning("Category error. Re-do with all categories.")
+            return self._semantic_search(question, top_n, metadata, callback_all_categories=True)
 
         similarity = question_embedding @ corpus_embeddings.T
         top_args = similarity[0].argsort()[::-1][:top_n]

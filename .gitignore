@@ -14,6 +14,7 @@ scratch_model/models
 
 # text_search folder
 subcat_models
+data_with_context.csv
 
 # mac specific
 .DS_Store
