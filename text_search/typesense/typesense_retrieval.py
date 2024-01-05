@@ -85,63 +85,126 @@ class TypesenseRetrieval:
 
             if return_probabilities:
                 prediction['subcategory'], sub_probs = subcategory_classifier.predict(question, True)
-                prediction['sub_probs'] = {f'{category}-{subcat}': prob for subcat, prob in sub_probs.items()}
+                prediction['sub_probs'] = {f'{category}|{subcat}': prob for subcat, prob in sub_probs.items()}
             else:
                 prediction['subcategory'] = subcategory_classifier.predict(question)
         return prediction
-    
-    def _get_text_retrieval_places(self, question: str):
+
+    def _select_text_retrieval_categories(self, question: str, return_probabilities: bool = False) -> dict:
         """
         High level interface between the classifier and the user. Tells us where to do 
         text retrieval based on the probability output of the categorization models.
 
-        It does this by returning the top categories with confidence  <0.2 difference from 
-        the highest probability category. (I refer to confidence as the model's probability output.)
+        So this is just a simplifed, more robust version of what is in `../text_retriever.py`.
 
-        If the model outputted a max confidence of <0.5, then it returns all categories
-        to stay safe. This was chosen because the classifier works best when it is confident
-        in my experience, and when it is not confident there is usually a grey area.
+        We will pick all categories/subcategories with confidence > 0.2. If the main category
+        is less than 0.5, then we will use all categories.
 
-        Returns:
-            dict: {
-                'main_categories': [str],
-                'subcategories': [str]
-            }
+        Args:
+            question (str): The question to classify
+            return_probabilities (bool, optional): Whether to return the probabilities of the model. Defaults to False.
         """
-        prediction = self._classify_question(question, True)
+        prediction = self._classify_question(question, return_probabilities=True)
 
-        # main category
-        main_cat_probs_df = pd.DataFrame(
-            [(category, prob) for category, prob in prediction['main_probs'].items()], 
-            columns=['category', 'probability']
-        ).sort_values(by='probability', ascending=False).reset_index(drop=True)
+        main_category_scores = (
+            pd.DataFrame(prediction['main_probs'].items(), columns=['category', 'score'])
+            .sort_values('score', ascending=False)
+            .reset_index(drop=True)
+        )
 
-        # Highest category probability
-        max_main_prob = main_cat_probs_df['probability'][0]
-
-        # if max_main_prob < 0.5: use everything regardless (classifier is not confident enough)
-        if max_main_prob < 0.5:
-            main_categories_to_use = main_cat_probs_df['category'].tolist()
-            subcategories_to_use = list(self.subcategory_classifiers.keys())
+        if main_category_scores['score'][0] < 0.3:
+            main_categories_to_use = main_category_scores['category'].to_list()
+            subcategories_to_use = [] # Uses all if []
         else:
-            # Use all categories at the top within 0.2 of the best category
-            main_categories_to_use = main_cat_probs_df[main_cat_probs_df['probability'] > max_main_prob - 0.2]['category'].tolist()
+            main_categories_to_use = main_category_scores[main_category_scores['score'] > 0.3]['category'].to_list()
 
             if 'sub_probs' in prediction.keys():
-                subcategory_probs_df = pd.DataFrame(
-                    [(category, prob) for category, prob in prediction['sub_probs'].items()], 
-                    columns=['category', 'probability']
-                ).sort_values(by='probability', ascending=False).reset_index(drop=True)
+                subcategory_scores = (
+                    pd.DataFrame(prediction['sub_probs'].items(), columns=['category', 'score'])
+                    .sort_values('score', ascending=False)
+                    .reset_index(drop=True)
+                )
+                subcategories_to_use = subcategory_scores[subcategory_scores['score'] > 0.15]['category'].to_list()
+            else:
+                subcategories_to_use = [] # Uses all if []
 
-                # Highest subcategory probability
-                max_sub_prob = subcategory_probs_df['probability'][0]
+        if return_probabilities:
+            return {
+                'main_categories': main_categories_to_use,
+                'sub_categories': subcategories_to_use,
+                'main_probs': prediction['main_probs'],
+                'sub_probs': prediction['sub_probs'] if 'sub_probs' in prediction.keys() else {}
+            }
+        else:
+            return {
+                'main_categories': main_categories_to_use,
+                'sub_categories': subcategories_to_use
+            }
 
-                # Subcategories within 0.2 of the highest subcategory
-                subcategories_to_use = subcategory_probs_df[subcategory_probs_df['probability'] > max_sub_prob - 0.2]['category'].tolist()
+    def _combine_categorization_with_search(self, question, alpha=0.8):
+        """
+        End to end function that takes in a question and returns the results of a hybrid search
+        using the question and the categories that the question was classified into.
 
-        text_retreival_places = {
-            'main_categories': main_categories_to_use,
-            'subcategories': subcategories_to_use if 'sub_probs' in prediction.keys() else []
+        Parameters
+        ----------
+        question : str
+            The question to be answered
+        alpha : float
+            The weighting parameter for the hybrid search. Higher = more weight on semantic search,
+            lower = more weight on keyword search
+        """
+        categories = self._select_text_retrieval_categories(question)
+
+        filter_by_query = f'main_category: {str(categories["main_categories"])}'
+
+        if categories['sub_categories'] != []:
+            categories['sub_categories'] = [subcat.split("|")[1] for subcat in categories['sub_categories']]
+        
+            filter_by_query = f'main_category: {str(categories["main_categories"])} && sub_category: {str(categories["sub_categories"])}'
+        
+        query = {
+            'q': question,
+            'filter_by': filter_by_query
         }
 
-        return text_retreival_places
+        response = self.client.multi_search.perform(
+            search_queries={'searches': [query]},
+            common_params = {
+                'collection': 'brockport_data_v1',
+                'query_by': 'embedding,context',
+                'limit': 2,
+                'prefix': False,
+                'vector_query': f'embedding:([], alpha: {alpha})',        
+                'exclude_fields': 'embedding'
+            }
+        )
+
+        return {
+            'question': question,
+            'categories': categories,
+            'response': response
+        }
+
+    def ask(self, question: str, alpha: float = 0.8):
+        """
+        End to end function that takes in a question and returns the results of a hybrid search
+        using the question and the categories that the question was classified into.
+
+        Parameters
+        ----------
+        question : str
+            The question to be answered
+        alpha : float
+            The weighting parameter for the hybrid search. Higher = more weight on semantic search,
+            lower = more weight on keyword search
+        """
+        search = self._combine_categorization_with_search(question, alpha)
+
+        # Pull out the raw text from the results
+        results = [x['document']['context'] for x in search['response']['results'][0]['hits']]
+
+        # Join the results together
+        results = "\n\n".join(results)
+
+        return results
