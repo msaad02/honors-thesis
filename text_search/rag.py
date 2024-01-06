@@ -3,16 +3,8 @@
 
 We will use the search engine from `text_search/text_retriever.py` to retrieve and GPT-4 to generate.
 """
-import os
-import sys
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../text_search')))
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-# from text_retriever import TextRetriever
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../text_search/typesense_test')))
-
-from typesense_retrieval import TypesenseRetrieval
+from text_retriever import TextRetriever
+from typesense_test.typesense_retrieval import TypesenseRetrieval
 from openai import OpenAI
 
 class RAG():
