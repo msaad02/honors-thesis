@@ -1,5 +1,5 @@
-from text_retriever import TextRetriever
-from typesense_test.typesense_retrieval import TypesenseRetrieval
+from text_retriever_class import TextRetriever
+from typesense_retrieval import TypesenseRetrieval
 from openai import OpenAI
 
 class Compare():

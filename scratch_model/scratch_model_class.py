@@ -1,7 +1,7 @@
 """
-Simple script to create class to run scratch model.
+Simple class to run scratch model.
 
-Expects tensorflow model that when ran, outputs a string.
+Expects tensorflow model that outputs in format from `tf_transformer.py`.
 """
 
 import os

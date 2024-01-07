@@ -1,13 +1,8 @@
 # Scratch Model
 
-184M parameter transformer model.
+The scratch model was primarily made so I could learn the inner workings of a transformer. 
+While it is not expected to be the best model, it serves as (1) a learning experience, and
+(2) a baseline for future models.
 
-# IDEA
-Make it like GPT, by training on all data from website then finetune on the QA dataset?
-
----
-continue...
-
-How can we build a model from scratch to try and do this.
-
-We don't expect this to be the greatest verison of this, but it is to learn.
+Using tensorflow, we created a 184M parameter transformer model using the question-answer 
+dataset generated prior from the website using GPT-4.

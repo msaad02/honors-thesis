@@ -34,7 +34,7 @@ tf.config.experimental.set_memory_growth(physical_devices[0], True) # Nice!
 
 
 # From tf_dataset.py in scratch-model, this gets the tf data pipeline
-from tf_dataset import get_datasets
+from scratch_model.tf_dataset import get_datasets
 
 # MODEL PARAMS: These are roughly the same parameters as used in the original transformer paper.
 BATCH_SIZE = 64        

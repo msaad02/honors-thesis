@@ -13,8 +13,8 @@ scratch_model/scratch-model-*
 scratch_model/models
 
 # text_search folder
-subcat_models
-data_with_context.csv
+text_search/models
+text_search/data
 
 # mac specific
 .DS_Store

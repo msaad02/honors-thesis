@@ -1,5 +1,11 @@
 # Text Retrieval
 
+NOTE TO SELF: Finish pure semantic search class.
+
+
+---
+
+
 This section contains the code for the text retrieval portion of the project. 
 
 This section is made completely detached from the data collection step. It sources all the data files from huggingface and processes them for use. To set it up, run the following setup files in order (from the 'text_search' directory). I highly recommend you have a GPU for this step, since it'll most likely take a while otherwise.
