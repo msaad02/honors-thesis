@@ -160,7 +160,7 @@ class TypesenseRetriever:
                 'sub_categories': subcategories_to_use
             }
 
-    def _combine_categorization_with_search(self, question, alpha=0.8):
+    def _combine_categorization_with_search(self, question, top_n, alpha=0.8):
         """
         End to end function that takes in a question and returns the results of a hybrid search
         using the question and the categories that the question was classified into.
@@ -169,6 +169,8 @@ class TypesenseRetriever:
         ----------
         question : str
             The question to be answered
+        top_n : int
+            The number of results to return
         alpha : float
             The weighting parameter for the hybrid search. Higher = more weight on semantic search,
             lower = more weight on keyword search
@@ -192,7 +194,7 @@ class TypesenseRetriever:
             common_params = {
                 'collection': 'brockport_data_v1',
                 'query_by': 'embedding,context',
-                'limit': 2,
+                'limit': top_n,
                 'prefix': False,
                 'vector_query': f'embedding:([], alpha: {alpha})',        
                 'exclude_fields': 'embedding'
@@ -205,7 +207,7 @@ class TypesenseRetriever:
             'response': response
         }
 
-    def retrieve(self, question: str, alpha: float = 0.8):
+    def retrieve(self, question: str, top_n: int = 3, alpha: float = 0.8):
         """
         End to end function that takes in a question and returns the results of a hybrid search
         using the question and the categories that the question was classified into.
@@ -214,11 +216,19 @@ class TypesenseRetriever:
         ----------
         question : str
             The question to be answered
+        top_n : int
+            The number of results to return
         alpha : float
             The weighting parameter for the hybrid search. Higher = more weight on semantic search,
             lower = more weight on keyword search
         """
-        search = self._combine_categorization_with_search(question, alpha)
+        if question == "":
+            return "No question given."
+
+        search = self._combine_categorization_with_search(question, top_n, alpha)
+
+        if 'code' in search['response']['results'][0].keys():
+            return "No results found."
 
         # Pull out the raw text from the results
         results = [x['document']['context'] for x in search['response']['results'][0]['hits']]
