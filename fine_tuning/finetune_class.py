@@ -103,7 +103,8 @@ class FineTunedEngine():
         if self.stream:
             for token in self.model(**llm_config):
                 answer += token
-                print(token, end="", flush=True) # flush=True to print immediately
+                # print(token, end="", flush=True) # flush=True to print immediately
+                yield answer
 
         elif not self.stream:
             answer = self.model(**llm_config)
