@@ -1,58 +1,22 @@
 """
-# Transformer Model
+Defines the complete architecture of the Transformer model.
 
+This code is adapted from the Tensorflow tutorial on Transformers:
 https://www.tensorflow.org/text/tutorials/transformer
-
-This is again following the tutorial on tensorflow's website. Did a lot of digging to find 
-simpler implementations but it seems breaking things down in the following way is actually 
-the most popular way to do it. Things may be better anyway since breaking it down makes 
-learning easier. 
-
-I plan to go slowly through this part and spend about a day with it to make sure I understand 
-it. However, it's worth mentioning that this should be plug and play based on the same data 
-pipeline I defined in `tf_dataset.py`. Note that the grand majority of this code is copy-pasted 
-from the tutorial. I did have to make some departures from the tutorial, however, since it
-was written for a different use case with different data. This is mostly in the export/running
-the thing. My tokenizer was different, which caused some issues.
 """
-
-# NOTE: Installing tensorflow_datasets and tensorflow_text updated tf to 2.13.0 from 12.2.1, if it breaks revert and find correct versions
 
 import os
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # stop showing tensorflow logs...
 
-import numpy as np
-import matplotlib.pyplot as plt
 import tensorflow as tf
-
-# Check GPU is being used. Prints [] if not
-physical_devices = tf.config.list_physical_devices("GPU")
-print(physical_devices)
+import numpy as np
 
 # Prevent tensorflow from allocating all GPU memory at once
+physical_devices = tf.config.list_physical_devices("GPU")
 tf.config.experimental.set_memory_growth(physical_devices[0], True)  # Nice!
 
 
-# From tf_dataset.py in scratch-model, this gets the tf data pipeline
-from dataset import get_datasets
-
-# MODEL PARAMS: These are roughly the same parameters as used in the original transformer paper.
-BATCH_SIZE = 64
-EPOCHS = 1  # What we used for transformer_v1
-NUM_LAYERS = 6  # 4
-D_MODEL = 512  # 128
-DFF = 2048  # 512
-NUM_HEADS = 8  # 8
-DROPOUT_RATE = 0.1  # 0.1
-
-save_dir = "./models/transformer_v100"
-save_weights_dir = "./models/TMP_WEIGHTS/"
-
-train_ds, val_ds, text_processor = get_datasets(batch_size=BATCH_SIZE)
-
-
-# ---- Defining stuff ----
 def positional_encoding(length, depth):
     depth = depth / 2
 
@@ -286,200 +250,16 @@ class Transformer(tf.keras.Model):
         self.final_layer = tf.keras.layers.Dense(target_vocab_size)
 
     def call(self, inputs):
-        # To use a Keras model with `.fit` you must pass all your inputs in the
-        # first argument.
         context, x = inputs
 
         context = self.encoder(context)  # (batch_size, context_len, d_model)
-
         x = self.decoder(x, context)  # (batch_size, target_len, d_model)
-
-        # Final linear layer output.
         logits = self.final_layer(x)  # (batch_size, target_len, target_vocab_size)
 
         try:
-            # Drop the keras mask, so it doesn't scale the losses/metrics.
-            # b/250038731
             del logits._keras_mask
         except AttributeError:
             pass
 
         # Return the final output and the attention weights.
         return logits
-
-
-class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-    def __init__(self, d_model, warmup_steps=4000):
-        super().__init__()
-
-        self.d_model = d_model
-        self.d_model = tf.cast(self.d_model, tf.float32)
-
-        self.warmup_steps = warmup_steps
-
-    def __call__(self, step):
-        step = tf.cast(step, dtype=tf.float32)
-        arg1 = tf.math.rsqrt(step)
-        arg2 = step * (self.warmup_steps**-1.5)
-
-        return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
-
-
-# ---- Setup loss and metrics ----
-def masked_loss(label, pred):
-    mask = label != 0
-    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
-        from_logits=True, reduction="none"
-    )
-    loss = loss_object(label, pred)
-
-    mask = tf.cast(mask, dtype=loss.dtype)
-    loss *= mask
-
-    loss = tf.reduce_sum(loss) / tf.reduce_sum(mask)
-    return loss
-
-
-def masked_accuracy(label, pred):
-    pred = tf.argmax(pred, axis=2)
-    label = tf.cast(label, pred.dtype)
-    match = label == pred
-
-    mask = label != 0
-
-    match = match & mask
-
-    match = tf.cast(match, dtype=tf.float32)
-    mask = tf.cast(mask, dtype=tf.float32)
-    return tf.reduce_sum(match) / tf.reduce_sum(mask)
-
-
-# ---- Training ----
-transformer = Transformer(
-    num_layers=NUM_LAYERS,
-    d_model=D_MODEL,
-    num_heads=NUM_HEADS,
-    dff=DFF,
-    input_vocab_size=5000,  # This is the vocab size used for all the datasets.
-    target_vocab_size=5000,
-    dropout_rate=DROPOUT_RATE,
-)
-
-
-learning_rate = CustomSchedule(D_MODEL)
-
-optimizer = tf.keras.optimizers.Adam(
-    learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9
-)
-
-transformer.compile(loss=masked_loss, optimizer=optimizer, metrics=[masked_accuracy])
-
-transformer.fit(train_ds, epochs=EPOCHS, validation_data=val_ds)
-
-
-transformer.save_weights(save_weights_dir)
-
-
-
-
-
-
-
-print(transformer.summary())
-
-# ---- Save model ----
-
-vocab = text_processor.get_vocabulary()
-
-MAX_TOKENS = 256
-
-
-class QuestionAnswering(tf.Module):
-    def __init__(self, tokenizers, transformer):
-        self.tokenizers = tokenizers
-        self.transformer = transformer
-
-    def __call__(self, sentence, max_length=MAX_TOKENS):
-        # The input sentence is Portuguese, hence adding the `[START]` and `[END]` tokens.
-        sentence = tf.convert_to_tensor([sentence])
-
-        assert isinstance(sentence, tf.Tensor)
-        if len(sentence.shape) == 0:
-            sentence = sentence[tf.newaxis]
-
-        # sentence = self.tokenizers.pt.tokenize(sentence).to_tensor()
-        sentence = self.tokenizers(sentence).to_tensor()
-
-        encoder_input = sentence
-
-        # As the output language is English, initialize the output with the
-        # English `[START]` token.
-        start_end = self.tokenizers([""])[0]
-        start = start_end[0][tf.newaxis]
-        end = start_end[1][tf.newaxis]
-
-        # `tf.TensorArray` is required here (instead of a Python list), so that the
-        # dynamic-loop can be traced by `tf.function`.
-        output_array = tf.TensorArray(dtype=tf.int64, size=0, dynamic_size=True)
-        output_array = output_array.write(0, start)
-
-        for i in tf.range(max_length):
-            output = tf.transpose(output_array.stack())
-            predictions = self.transformer([encoder_input, output], training=False)
-
-            # Select the last token from the `seq_len` dimension.
-            predictions = predictions[:, -1:, :]  # Shape `(batch_size, 1, vocab_size)`.
-
-            predicted_id = tf.argmax(predictions, axis=-1)
-
-            # Concatenate the `predicted_id` to the output which is given to the
-            # decoder as its input.
-            output_array = output_array.write(i + 1, predicted_id[0])
-
-            if predicted_id == end:
-                break
-
-        output = tf.transpose(output_array.stack())
-        vocab_tf = tf.constant(vocab)
-
-        text = tf.strings.reduce_join(
-            tf.map_fn(lambda x: vocab_tf[x], tf.squeeze(output), dtype=tf.string),
-            separator=" ",
-        )
-        tokens = output
-
-        # `tf.function` prevents us from using the attention_weights that were
-        # calculated on the last iteration of the loop.
-        # So, recalculate them outside the loop.
-        self.transformer([encoder_input, output[:, :-1]], training=False)
-        attention_weights = self.transformer.decoder.last_attn_scores
-
-        return text, tokens, attention_weights
-
-
-questionAnswerer = QuestionAnswering(text_processor, transformer)
-
-# ---- Export model ----
-
-
-class ExportQA(tf.Module):
-    def __init__(self, translator):
-        self.translator = translator
-
-    @tf.function(input_signature=[tf.TensorSpec(shape=[], dtype=tf.string)])
-    def __call__(self, sentence):
-        result, tokens, attention_weights = self.translator(
-            sentence, max_length=MAX_TOKENS
-        )
-
-        return result
-
-
-questionAnswerer = ExportQA(questionAnswerer)
-
-tf.saved_model.save(questionAnswerer, export_dir=save_dir)
-
-# Example usage:
-
-# model = tf.saved_model.load('./models/transformer_v2')
-# model("How can I apply?").numpy()

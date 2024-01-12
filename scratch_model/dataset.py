@@ -5,14 +5,20 @@ This also does some preprocessing of the data, such as adding start and end toke
 """
 
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # stop showing tensorflow logs...
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # stop showing tensorflow logs
 from datasets import load_dataset
 import tensorflow as tf
 import numpy as np
 
+seed = 9
+np.random.seed(seed)
+tf.random.set_seed(seed)
+
 dataset = load_dataset("msaad02/brockport-gpt-4-qa")
 dataset = dataset['train'].to_pandas()
 
+# Note that the prompt is never used in the dataset, but it is included 
+# here as an artifact from the original implementation of the scratch model
 prompt = lambda question, answer: f"""Below is an inquiery related to SUNY Brockport - from academics, admissions, and faculty support to student life. Prioritize accuracy and brevity.\n\n### Instruction:\n{question}\n\n### Response:\n{answer}"""
 
 dataset = [prompt(question, answer) for question, answer in zip(dataset['question'], dataset['answer'])]
@@ -25,10 +31,10 @@ def split_input_output(s):
     input_split = output_split[0].split('### Instruction:\n')[1]
     return input_split, output_split[1]
 
+# @tf.keras.saving.register_keras_serializable(name="text_standardization")
+@tf.keras.utils.register_keras_serializable(name="text_standardization")
 def tf_lower_and_split_punct(text):
-    """
-    Text standardization function. Tries to make things uniform.
-    """
+    "Text standardization function. Tries to make things uniform."
     text = tf.strings.lower(text) # Lowercase everything
     text = tf.strings.regex_replace(text, '[^ a-z.?!,¿]', '') # Keep space, a to z and punctuation.
     text = tf.strings.regex_replace(text, '[.?!,¿]', r' \0 ') # Add spaces around punctuation.
@@ -38,9 +44,7 @@ def tf_lower_and_split_punct(text):
     return text
 
 def get_datasets(batch_size: int = 64):
-    """
-    Return train_ds, val_ds, and text_processor
-    """
+    "Return train_ds, val_ds, and text_processor"
     context_raw, target_raw = [list(t) for t in zip(*[split_input_output(string) for string in dataset])]
 
     BUFFER_SIZE = len(context_raw)
@@ -57,13 +61,13 @@ def get_datasets(batch_size: int = 64):
     train_raw = (
         tf.data.Dataset
         .from_tensor_slices((train_context, train_target))
-        .shuffle(BUFFER_SIZE)
+        .shuffle(BUFFER_SIZE, seed=seed)
         .batch(BATCH_SIZE)
     )
     val_raw = (
         tf.data.Dataset
         .from_tensor_slices((val_context, val_target))
-        .shuffle(BUFFER_SIZE)
+        .shuffle(BUFFER_SIZE, seed=seed)
         .batch(BATCH_SIZE)
     )
 
