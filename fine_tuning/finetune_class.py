@@ -108,7 +108,8 @@ class FineTunedEngine():
 
         elif not self.stream:
             answer = self.model(**llm_config)
+            return answer
         else:
             raise ValueError("Invalid stream value. Must be True or False")
         
-        return answer
+        # return answer

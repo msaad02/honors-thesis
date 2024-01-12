@@ -1,34 +1,33 @@
+"""
+Contains code to oversee all components of QA via "Manage_QA" class, and
+launches the Gradio UI which allows users to interact with the QA system.
+"""
+
 from text_search.text_retriever_class import TextRetriever, TypesenseRetriever
 import gradio as gr
 from openai import OpenAI
 from termcolor import colored
 from torch.cuda import is_available
 from typing import Optional
-from ctransformers import AutoModelForCausalLM
 from scratch_model.scratch_model_class import ScratchModelEngine
 from fine_tuning.finetune_class import FineTunedEngine
 import tensorflow as tf
+import docker
+import signal
+import sys
+import subprocess
+
+TYPESENSE_CONTAINER_NAME = "typesense_container"
 
 # NOTE TO SELF:
+# * Semantic retrieval NOT IMPLEMENTED.
+# * Typesesse retrieval is USING CLASSIFIER regardless of what is passed in.
+# * Scratch model not in UI, or implemented at all (it also won't stream, yet).
 
-#* Currently openai works with both retrivers.
-#* Custom model DOES NOT WORK. Async error for streaming somewhere.
-#* Semantic retrieval NOT IMPLEMENTED.
-#* Typesesse retrieval is USING CLASSIFIER regardless of what is passed in.
-#* Scratch model not in UI, or implemented at all (it also won't stream, yet).
-
-custom_model_prompt = lambda question: f"""\
-Below is an inquiry related to SUNY Brockport - from academics, admissions, and faculty support to student life. Prioritize accuracy and brevity.
-
-### Instruction:
-{question}
-
-### Response:
-"""
-
-openai_system = """You are a helpful chatbot for SUNY Brockport who answers questions using the context given. Be enthusiastic, straightforward, and brief in your responses. Do not answer questions unrelated to SUNY Brockport. If the answer is not clear from the context, say "I'm sorry, I don't know"."""
+openai_system = """You are a helpful chatbot for SUNY Brockport who answers questions using the context given. Be enthusiastic, straightforward, brief, and happy to help in your responses. In general, prefer to be give broad answers unless the question is asking for details. Do not answer questions unrelated to SUNY Brockport. If the answer is not clear from the context, say "I'm sorry, I don't know"."""
 
 openai_prompt = lambda context, question: f"Context: {context}\n\nQuestion: {question}"
+
 
 class Manage_QA:
     def __init__(
@@ -44,8 +43,11 @@ class Manage_QA:
         typesense_api_key: str = "xyz",
         use_classifier: bool = True,
         device: Optional[str] = None,
-        openai_api_key: Optional[str] = None
+        openai_api_key: Optional[str] = None,
     ):
+        print("Starting typesense docker container...")
+        self.start_docker_container()
+
         print(colored("Loading Models...\n", color="red", attrs=["bold"]))
         if device is None:
             device = "cuda" if is_available() else "cpu"
@@ -56,7 +58,7 @@ class Manage_QA:
             subcategorization_model_dir=subcategorization_model_dir,
             embeddings_file=embeddings_file,
             question_classifier=use_classifier,
-            device=device
+            device=device,
         )
 
         self.typesense_retriever = TypesenseRetriever(
@@ -67,7 +69,7 @@ class Manage_QA:
             typesense_protocol=typesense_protocol,
             typesense_collection_name=typesense_collection_name,
             typesense_api_key=typesense_api_key,
-            question_classifier=use_classifier
+            question_classifier=use_classifier,
         )
 
         # self.semantic_retriever = SemanticRetriever()
@@ -75,43 +77,69 @@ class Manage_QA:
         self.openai_client = OpenAI(api_key=openai_api_key)
 
         self.finetuned_model = FineTunedEngine(
-            model_name=finetuned_model_name,
-            model_type=model_type
+            model_name=finetuned_model_name, model_type=model_type, stream=True
         )
 
         self.scratch_model = ScratchModelEngine()
 
+    def start_docker_container(self):
+        "Starts up typesense docker container if it is not already running."
+        client = docker.from_env()
+
+        start = True
+        try:
+            container = client.containers.get(TYPESENSE_CONTAINER_NAME)
+            if container.status == "running":
+                print("Docker container is already running...")
+                start = False
+
+        except docker.errors.NotFound:
+            print("Docker container not found...")
+
+        if start:
+            print("Docker container is not running. Starting it now...")
+            command = (
+                f"docker run --name {TYPESENSE_CONTAINER_NAME} -p 8108:8108 "
+                "-v /home/msaad/typesense-data:/data "
+                "typesense/typesense:0.25.2 "
+                "--data-dir /data "
+                "--api-key=xyz "
+                "--enable-cors"
+            )
+            subprocess.Popen(
+                command,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                shell=True,
+            )
+            print("Docker container started.\n")
 
     def run_model(self, question, config):
-        model_type = config["model_type"]           # custom, or openai
-        search_type = config["search_type"]         # semantic, semantic_rerank, or typesense
-        use_classifier = config["use_classifier"]   # True or False
-        n_results = config["n_results"]             # (Cannot be 1) Number of RAG results to return
-        model_kwargs = config["model_kwargs"]       # kwargs for model (temperature, max_tokens, etc.)
-        
+        model_type = config["model_type"]  # custom, or openai
+        search_type = config["search_type"]  # semantic, semantic_rerank, or typesense
+        use_classifier = config["use_classifier"]  # True or False
+        n_results = config["n_results"]  # (Cannot be 1) Number of RAG results to return
+        model_kwargs = config["model_kwargs"]  # includes temperature, max_tokens, etc.
 
         # ----- Text Retrieval -----
-        if search_type == "semantic":
+        if search_type == "none":
+            context = ""
+        elif search_type == "semantic":
             context = "Not implemented yet"
             # context = self.text_retriever.retrieve(question, top_n=n_results)
         elif search_type == "semantic_rerank":
             context = self.text_retriever.retrieve(
-                question, 
-                top_n=n_results,
-                use_classifier=use_classifier
+                question, top_n=n_results, use_classifier=use_classifier
             )
         elif search_type == "typesense":
             context = self.typesense_retriever.retrieve(
-                question, 
-                top_n=n_results,
-                use_classifier=use_classifier
+                question, top_n=n_results, use_classifier=use_classifier
             )
 
-        print("-"*150)
+        print("-" * 150)
         print(colored(f"Search Type: {search_type}", "green"))
         print(colored(f"Question: {question}", "blue"))
         print(colored(f"Context: {context}", "yellow"))
-
 
         # ----- Language Generation -----
         if model_type == "custom":
@@ -140,35 +168,18 @@ class Manage_QA:
 
 question_client = Manage_QA()
 
-def rag(question, history, search_method, model_type, use_classifier, max_results):
 
+def rag(question, history, model_type, search_method, use_classifier, max_results):
     config = {
         "model_type": model_type,
         "search_type": search_method,
         "use_classifier": use_classifier,
         "n_results": max_results,
-        "model_kwargs": {
-            "temperature": 0.9
-        }
+        "model_kwargs": {"temperature": 0.9},
     }
 
     for result in question_client.run_model(question, config):
         yield result
-
-import signal
-import sys
-
-def signal_handler(sig, frame):
-    print(colored("\n\nInterrupt received, cleaning up...", "red"))
-
-    global question_client
-    del question_client
-
-    tf.keras.backend.clear_session()
-    
-    sys.exit(0)
-
-signal.signal(signal.SIGINT, signal_handler)
 
 
 demo = gr.ChatInterface(
@@ -179,19 +190,39 @@ demo = gr.ChatInterface(
         bubble_full_width=False,
     ),
     additional_inputs=[
+        gr.Dropdown(choices=["openai", "custom"], value="openai", label="Model Type"),
         gr.Dropdown(
-            choices=["semantic", "semantic_rerank", "typesense"],
+            choices=["typesense", "semantic_rerank", "semantic", "none"],
             value="typesense",
             label="Search Method",
         ),
-        gr.Dropdown(
-            choices=["openai", "custom"],
-            value="openai",
-            label="Model Type"
-        ),
-        gr.Checkbox(value=True, label="Use Classifier"),
-        gr.Slider(2, 6, render=False),
+        gr.Checkbox(value=True, label="Search Method - Use Classifier"),
+        gr.Slider(1, 6, value=3),
     ],
 )
+
+
+# Clean up when done
+def signal_handler(sig, frame):
+    print(colored("\n\nInterrupt received, cleaning up...", "red"))
+
+    global question_client
+    del question_client
+
+    tf.keras.backend.clear_session()
+
+    client = docker.from_env()
+    try:
+        container = client.containers.get(TYPESENSE_CONTAINER_NAME)
+        container.stop()
+        container.remove()
+        print(f"Container '{TYPESENSE_CONTAINER_NAME}' has been stopped.")
+    except docker.errors.NotFound:
+        print(f"Container '{TYPESENSE_CONTAINER_NAME}' not found.")
+
+    sys.exit(0)
+
+
+signal.signal(signal.SIGINT, signal_handler)
 
 demo.launch(show_api=False, inbrowser=True)

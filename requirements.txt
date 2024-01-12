@@ -25,3 +25,6 @@ matplotlib
 einops
 tensorflow_datasets
 # tensorflow_text
+
+docker
+gradio
