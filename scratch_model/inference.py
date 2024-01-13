@@ -20,6 +20,7 @@ you can iterate over to get the output of the model one token at a time.
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # hide tensorflow logs
 
+from dataset import standardize     # Crucial to reload the text processor
 from model import Transformer       # Model architecture
 import tensorflow as tf
 import json

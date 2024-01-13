@@ -31,9 +31,9 @@ def split_input_output(s):
     input_split = output_split[0].split('### Instruction:\n')[1]
     return input_split, output_split[1]
 
-# @tf.keras.saving.register_keras_serializable(name="text_standardization")
-@tf.keras.utils.register_keras_serializable(name="text_standardization")
-def tf_lower_and_split_punct(text):
+
+@tf.keras.utils.register_keras_serializable("Custom", name="text_standardization")
+def standardize(text):
     "Text standardization function. Tries to make things uniform."
     text = tf.strings.lower(text) # Lowercase everything
     text = tf.strings.regex_replace(text, '[^ a-z.?!,¿]', '') # Keep space, a to z and punctuation.
@@ -42,6 +42,7 @@ def tf_lower_and_split_punct(text):
 
     text = tf.strings.join(['[START]', text, '[END]'], separator=' ') # Add start and end token
     return text
+
 
 def get_datasets(batch_size: int = 64):
     "Return train_ds, val_ds, and text_processor"
@@ -74,7 +75,7 @@ def get_datasets(batch_size: int = 64):
     MAX_VOCAB_SIZE = 5000
 
     text_processor = tf.keras.layers.TextVectorization(
-        standardize=tf_lower_and_split_punct,
+        standardize=standardize,
         max_tokens=MAX_VOCAB_SIZE,
         ragged=True
     )

@@ -131,6 +131,7 @@ with open(os.path.join(save_dir, "params.json"), "w") as f:
 
 # ---- Export text processor ----
 txt_model = tf.keras.Sequential([text_processor])
+txt_model.compile()
 txt_model.save(save_dir + "text_processor")
 
 
