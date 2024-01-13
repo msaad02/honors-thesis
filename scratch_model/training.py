@@ -8,7 +8,6 @@ Also exports the model parameters and weights to the `save_dir` folder.
 """
 
 import os
-
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # stop showing tensorflow logs...
 
 from model import Transformer  # Model architecture
@@ -18,14 +17,14 @@ import json
 
 # ---- Model parameters ----
 BATCH_SIZE = 64
-EPOCHS = 2  # Most likely not optimal, but it works fairly well
+EPOCHS = 12  # Most likely not optimal, but it works fairly well
 NUM_LAYERS = 6  # 4
 D_MODEL = 512  # 128
 DFF = 2048  # 512
 NUM_HEADS = 8  # 8
 DROPOUT_RATE = 0.1  # 0.1
 
-save_dir = "./models/transformer_v4/"
+save_dir = "./models/transformer_v5/"
 
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
@@ -122,8 +121,7 @@ params = {
     "dff": DFF,
     "input_vocab_size": 5000,
     "target_vocab_size": 5000,
-    "dropout_rate": DROPOUT_RATE,
-    "batch_size": BATCH_SIZE,  # To get back text_processor
+    "dropout_rate": DROPOUT_RATE
 }
 
 with open(os.path.join(save_dir, "params.json"), "w") as f:

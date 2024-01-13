@@ -9,7 +9,7 @@ from openai import OpenAI
 from termcolor import colored
 from torch.cuda import is_available
 from typing import Optional
-from scratch_model.scratch_model_class import ScratchModelEngine
+from scratch_model.inference import ScratchModel
 from fine_tuning.finetune_class import FineTunedEngine
 import tensorflow as tf
 import docker
@@ -80,7 +80,7 @@ class Manage_QA:
             model_name=finetuned_model_name, model_type=model_type, stream=True
         )
 
-        self.scratch_model = ScratchModelEngine()
+        self.scratch_model = ScratchModel()
 
     def start_docker_container(self):
         "Starts up typesense docker container if it is not already running."
@@ -147,6 +147,11 @@ class Manage_QA:
             for result in response:
                 yield result
 
+        elif model_type == "scratch":
+            response = self.scratch_model(question, stream=True)
+            for result in response:
+                yield result
+
         elif model_type == "openai":
             response = self.openai_client.chat.completions.create(
                 model="gpt-3.5-turbo",
@@ -165,9 +170,10 @@ class Manage_QA:
                     message += content
                     yield message
 
+        
+
 
 question_client = Manage_QA()
-
 
 def rag(question, history, model_type, search_method, use_classifier, max_results):
     config = {
@@ -186,7 +192,7 @@ demo = gr.ChatInterface(
     rag,
     chatbot=gr.Chatbot(
         height="68vh",
-        avatar_images=("./user.png", "./BrockportGPT Logo.png"),
+        avatar_images=("./user_logo.png", "./brockportgpt_logo.png"),
         bubble_full_width=False,
     ),
     additional_inputs=[

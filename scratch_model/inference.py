@@ -36,15 +36,14 @@ class ScratchModel(tf.Module):
         # Load model parameters
         with open(f"{model_dir}/params.json", "r") as f:
             config = json.load(f)
-        batch_size = config.pop("batch_size")
 
         # Load model
         self.transformer = Transformer(**config)
         _ = self.transformer.load_weights(model_dir)
 
         # Get text processor and vocab
-        loaded_text_processor = tf.keras.models.load_model(model_dir + "text_processor")
-        self.text_processor = loaded_text_processor.layers[0]
+        text_processor_model = tf.keras.models.load_model(model_dir + "text_processor")
+        self.text_processor = text_processor_model.layers[0]
 
         self.vocab = self.text_processor.get_vocabulary()
         self.vocab_tf = tf.constant(self.vocab)
@@ -53,19 +52,23 @@ class ScratchModel(tf.Module):
         with open(fix_capitalization_dir, "r") as f:
             self.word_list = json.load(f)
 
-    def _clean_string(self, s: str):
+    def _clean_string(self, text: str):
         "Cleans the string to be more readable using some simple rules"
-        # Automatically capitalize words that should be capitalized
-        for word in self.word_list.keys():
-            s = s.replace("word", self.word_list[word])
-        
-        s = s.replace("[START]", "").replace("[END]", "").strip() # Remove [START] and [END] tags
-        s = re.sub(r'\s+([?.!,;])', r'\1', s) # Remove spaces before punctuation like ",", ".", etc.
 
-        # Capitalize the first letter after punctuation marks and firstl letter of string
-        s = re.sub(r'([?.!;]) (\w)', lambda x: x.group(1) + " " + x.group(2).upper(), s) 
-        s = s[0].upper() + s[1:]
-        return s
+        # Capitalize words that should be capitalized
+        for word in self.word_list.keys():
+            text = text.replace(word, self.word_list[word])
+        
+        text = text.removeprefix("[START] ")
+        text = text.removesuffix(" [END]")
+
+        # Remove spaces before punctuation marks
+        text = re.sub(r'\s+([?.!,;])', r'\1', text)
+
+        # Capitalize the first letter after punctuation marks and first letter of string
+        text = re.sub(r'([?.!;]) (\w)', lambda x: x.group(1) + " " + x.group(2).upper(), text) 
+        text = text[0].upper() + text[1:]
+        return text
 
     @tf.autograph.experimental.do_not_convert
     def _predict_next(self, question, output_array, i):
@@ -91,7 +94,7 @@ class ScratchModel(tf.Module):
                 if prediction_id == end:
                     break
 
-                yield self._clean_string(str(text))
+                yield self._clean_string(text.numpy().decode("utf-8"))
 
     def _return_result(self, question, output_array, max_tokens, end):
         "Returns the result of the prediction"
@@ -100,8 +103,8 @@ class ScratchModel(tf.Module):
     
                 if prediction_id == end:
                     break
-    
-        return self._clean_string(str(text))
+        
+        return self._clean_string(text.numpy().decode("utf-8"))
 
     def __call__(self, question: str, max_tokens: int = 256, stream: bool = False):
         "Oversees the prediction process. Returns a generator if stream=True"
