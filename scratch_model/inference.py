@@ -12,13 +12,18 @@ parameter in the call to True. This will return a generator object that
 you can iterate over to get the output of the model one token at a time.
 
 >>> from scratch_model.inference import ScratchModel
+>>> from IPython.display import clear_output # If using ipynb
 >>> model = ScratchModel()
 >>> for token in model("How can I apply to SUNY Brockport?", stream=True):
 ...     print(token)
+...     clear_output(wait=True) # If using ipynb
 """
 
 import os
+import sys
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # hide tensorflow logs
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
 
 from dataset import standardize     # Crucial to reload the text processor
 from model import Transformer       # Model architecture
@@ -30,16 +35,15 @@ class ScratchModel(tf.Module):
     "Main class to run inference on the scratch model"
     def __init__(
         self,
-        model_dir: str = "./models/transformer_v4/",
-        fix_capitalization_dir: str = "./fix_capitalization.json"
+        model_dir: str = "./models/transformer_v5/"
     ):
         # Load model parameters
-        with open(f"{model_dir}/params.json", "r") as f:
+        with open(f"{model_dir}params.json", "r") as f:
             config = json.load(f)
 
         # Load model
         self.transformer = Transformer(**config)
-        _ = self.transformer.load_weights(model_dir)
+        _ = self.transformer.load_weights(model_dir).expect_partial()
 
         # Get text processor and vocab
         text_processor_model = tf.keras.models.load_model(model_dir + "text_processor")
@@ -48,9 +52,25 @@ class ScratchModel(tf.Module):
         self.vocab = self.text_processor.get_vocabulary()
         self.vocab_tf = tf.constant(self.vocab)
 
-        # Load word list for capitalization
-        with open(fix_capitalization_dir, "r") as f:
-            self.word_list = json.load(f)
+        # Load word mappings for capitalization
+        self.word_list = {
+            "brockport": "Brockport",
+            "suny": "SUNY",
+            "new york": "New York",
+            "new york state": "New York State",
+            "new york city": "New York City",
+            "fafsa": "FAFSA",
+            "rochester": "Rochester",
+            "buffalo": "Buffalo",
+            "computer science": "Computer Science",
+            "math": "Math",
+            "english": "English",
+            "history": "History",
+            "biology": "Biology",
+            "chemistry": "Chemistry",
+            "physics": "Physics",
+            "psychology": "Psychology"
+        }
 
     def _clean_string(self, text: str):
         "Cleans the string to be more readable using some simple rules"

@@ -5,6 +5,9 @@ Nothing out of the ordinary here. Pull in data from dataset.py, pull in the mode
 setup the loss and metrics, and train.
 
 Also exports the model parameters and weights to the `save_dir` folder.
+
+This code is adapted from the Tensorflow tutorial on Transformers:
+https://www.tensorflow.org/text/tutorials/transformer
 """
 
 import os

@@ -21,8 +21,7 @@ TYPESENSE_CONTAINER_NAME = "typesense_container"
 
 # NOTE TO SELF:
 # * Semantic retrieval NOT IMPLEMENTED.
-# * Typesesse retrieval is USING CLASSIFIER regardless of what is passed in.
-# * Scratch model not in UI, or implemented at all (it also won't stream, yet).
+# * Typesesse retrieval is USING CLASSIFIER regardless of checkbox value.
 
 openai_system = """You are a helpful chatbot for SUNY Brockport who answers questions using the context given. Be enthusiastic, straightforward, brief, and happy to help in your responses. In general, prefer to be give broad answers unless the question is asking for details. Do not answer questions unrelated to SUNY Brockport. If the answer is not clear from the context, say "I'm sorry, I don't know"."""
 
@@ -80,7 +79,9 @@ class Manage_QA:
             model_name=finetuned_model_name, model_type=model_type, stream=True
         )
 
-        self.scratch_model = ScratchModel()
+        self.scratch_model = ScratchModel(
+            model_dir="./scratch_model/models/transformer_v5/"
+        )
 
     def start_docker_container(self):
         "Starts up typesense docker container if it is not already running."
@@ -113,36 +114,48 @@ class Manage_QA:
                 shell=True,
             )
             print("Docker container started.\n")
+            
 
-    def run_model(self, question, config):
-        model_type = config["model_type"]  # custom, or openai
+    def get_context(self, question, config):
+        "Gets the context for the question using the specified search type."
+
+        model_type = config["model_type"]  # finetuned, or openai
         search_type = config["search_type"]  # semantic, semantic_rerank, or typesense
         use_classifier = config["use_classifier"]  # True or False
         n_results = config["n_results"]  # (Cannot be 1) Number of RAG results to return
-        model_kwargs = config["model_kwargs"]  # includes temperature, max_tokens, etc.
-
-        # ----- Text Retrieval -----
-        if search_type == "none":
-            context = ""
-        elif search_type == "semantic":
-            context = "Not implemented yet"
-            # context = self.text_retriever.retrieve(question, top_n=n_results)
-        elif search_type == "semantic_rerank":
-            context = self.text_retriever.retrieve(
-                question, top_n=n_results, use_classifier=use_classifier
-            )
-        elif search_type == "typesense":
-            context = self.typesense_retriever.retrieve(
-                question, top_n=n_results, use_classifier=use_classifier
-            )
+        
+        if model_type == "openai":
+            if search_type == "none":
+                context = "No search method selected."
+            elif search_type == "semantic":
+                context = "Not implemented yet"
+                # context = self.text_retriever.retrieve(question, top_n=n_results)
+            elif search_type == "semantic_rerank":
+                context = self.text_retriever.retrieve(
+                    question, top_n=n_results, use_classifier=use_classifier
+                )
+            elif search_type == "typesense":
+                context = self.typesense_retriever.retrieve(
+                    question, top_n=n_results, use_classifier=use_classifier
+                ) 
+        else:
+            context = "N/A"
 
         print("-" * 150)
         print(colored(f"Search Type: {search_type}", "green"))
         print(colored(f"Question: {question}", "blue"))
         print(colored(f"Context: {context}", "yellow"))
 
-        # ----- Language Generation -----
-        if model_type == "custom":
+        return context
+
+
+    def get_answer(self, question, context, config):
+        "Gets the answer to the question using the specified model type."
+
+        model_type = config["model_type"]
+        model_kwargs = config["model_kwargs"]
+
+        if model_type == "finetuned":
             response = self.finetuned_model(question, **model_kwargs)
             for result in response:
                 yield result
@@ -162,7 +175,6 @@ class Manage_QA:
                 **model_kwargs,
                 stream=True,
             )
-
             message = ""
             for chunk in response:
                 content = chunk.choices[0].delta.content
@@ -170,7 +182,21 @@ class Manage_QA:
                     message += content
                     yield message
 
-        
+
+    def run_model(self, question, config):
+        "Runs the QA system and yields the results."
+
+        try: # ----- Get Context -----
+            context = self.get_context(question, config)
+        except:
+            context = "Error getting context."
+
+        try: # ----- Language Generation -----
+            response = self.get_answer(question, context, config)
+            for result in response:
+                yield result
+        except:
+            yield "Error generating response."
 
 
 question_client = Manage_QA()
@@ -196,20 +222,21 @@ demo = gr.ChatInterface(
         bubble_full_width=False,
     ),
     additional_inputs=[
-        gr.Dropdown(choices=["openai", "custom"], value="openai", label="Model Type"),
+        gr.Dropdown(choices=["openai", "finetuned", "scratch"], value="openai", label="Model Type"),
         gr.Dropdown(
             choices=["typesense", "semantic_rerank", "semantic", "none"],
             value="typesense",
             label="Search Method",
         ),
         gr.Checkbox(value=True, label="Search Method - Use Classifier"),
-        gr.Slider(1, 6, value=3),
+        gr.Slider(1, 6, value=3, step=1),
     ],
 )
 
 
-# Clean up when done
 def signal_handler(sig, frame):
+    "Clean up when the program is interrupted."
+
     print(colored("\n\nInterrupt received, cleaning up...", "red"))
 
     global question_client
@@ -229,6 +256,15 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
-signal.signal(signal.SIGINT, signal_handler)
+def main():
+    "Main function to run the QA system."
 
-demo.launch(show_api=False, inbrowser=True)
+    # Register signal handler to clean up when the program is interrupted.
+    signal.signal(signal.SIGINT, signal_handler)
+
+    # Launch the Gradio UI.
+    demo.launch(show_api=False, inbrowser=True)
+
+
+if __name__ == "__main__":
+    main()
