@@ -28,6 +28,11 @@ import typesense
 import torch
 import pickle
 
+# Todo:
+# 1. Finish question classifier rework. Integrate into text retriever. TypesenseRetriever is done.
+# 2. Create the semantic retriever.
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 class SemanticRetriever:
     def __init__():
@@ -36,6 +41,7 @@ class SemanticRetriever:
     def retrieve():
         pass
 
+# ----------------------------------------------------------------------------------------------------------------------
 
 class TypesenseRetriever:
     """
@@ -47,21 +53,20 @@ class TypesenseRetriever:
     engine. That means it is using both keyword search and semantic search to find the
     best results.
 
-    This script aims to combine the two methods. It will implement the classifier from
-    previous scripts to initially filter the results. Then, it will use Typesense to
-    saerch from the filtered results. This should give us the best of both worlds.
+    This script aims to combine all the methods. It will implement the classifier to 
+    initially filter the results. Then, it will use Typesense hybrid search from the 
+    filtered results. This should give us the best of both worlds.
     """
 
     def __init__(
         self,
+        main_categorization_model_dir: str = "./models/main_category_model",
+        subcategorization_model_dir: str = "./models/subcategory_models/",
         typesense_host: str = "localhost",
         typesense_port: str = "8108",
         typesense_protocol: str = "http",
         typesense_collection_name: str = "brockport_data_v1",
-        typesense_api_key: str = "xyz",
-        main_categorization_model_dir: str = "./models/main_category_model",
-        subcategorization_model_dir: str = "./models/subcategory_models/",
-        question_classifier: bool = True
+        typesense_api_key: str = "xyz"
     ):
         """
         Initialize the TypesenseRetrieval object. This will create a connection to
@@ -84,116 +89,16 @@ class TypesenseRetriever:
             }
         )
 
-        self.question_classifier = question_classifier
         self.collection_name = typesense_collection_name
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
 
-        # Categorization
-        self.main_classifier = QuestionClassifier(
-            model_dir=main_categorization_model_dir
-        )
-        self.subcategory_classifiers = {}
-        for subcat in os.listdir(subcategorization_model_dir):
-            self.subcategory_classifiers[subcat] = QuestionClassifier(
-                subcategorization_model_dir + subcat
-            )
-
-    def _classify_question(self, question: str, return_probabilities: bool = False):
-        """
-        Classifies user question into a main category and subcategory (if applicable).
-
-        There is no other processing done in this step, it returns a dictionary with relevant
-        information for the next step, and an option to return the probabilities of the model
-        to better understand the model's confidence in its prediction.
-        """
-        prediction = {}
-        if return_probabilities:
-            (
-                prediction["category"],
-                prediction["main_probs"],
-            ) = self.main_classifier.predict(question, True)
-        else:
-            prediction["category"] = self.main_classifier.predict(question)
-
-        category = prediction["category"]
-        if category in self.subcategory_classifiers:
-            subcategory_classifier = self.subcategory_classifiers[category]
-
-            if return_probabilities:
-                prediction["subcategory"], sub_probs = subcategory_classifier.predict(
-                    question, True
-                )
-                prediction["sub_probs"] = {
-                    f"{category}|{subcat}": prob for subcat, prob in sub_probs.items()
-                }
-            else:
-                prediction["subcategory"] = subcategory_classifier.predict(question)
-        return prediction
-
-    def _select_text_retrieval_categories(
-        self, question: str, return_probabilities: bool = False, use_classifier: bool = True
-    ) -> dict:
-        """
-        High level interface between the classifier and the user. Tells us where to do
-        text retrieval based on the probability output of the categorization models.
-
-        So this is just a simplifed, more robust version of what is in `../text_retriever.py`.
-
-        We will pick all categories/subcategories with confidence > 0.2. If the main category
-        is less than 0.5, then we will use all categories.
-
-        Args:
-            question (str): The question to classify
-            return_probabilities (bool, optional): Whether to return the probabilities of the model. Defaults to False.
-        """
-        prediction = self._classify_question(question, return_probabilities=True)
-
-        main_category_scores = (
-            pd.DataFrame(
-                prediction["main_probs"].items(), columns=["category", "score"]
-            )
-            .sort_values("score", ascending=False)
-            .reset_index(drop=True)
+        self.categorizer = QuestionClassifier(
+            main_categorization_model_dir=main_categorization_model_dir,
+            subcategorization_model_dir=subcategorization_model_dir,
         )
 
-        if main_category_scores["score"][0] < 0.3 or not self.question_classifier or not use_classifier:
-            main_categories_to_use = main_category_scores["category"].to_list()
-            subcategories_to_use = []  # Uses all if []
-        else:
-            main_categories_to_use = main_category_scores[
-                main_category_scores["score"] > 0.3
-            ]["category"].to_list()
 
-            if "sub_probs" in prediction.keys():
-                subcategory_scores = (
-                    pd.DataFrame(
-                        prediction["sub_probs"].items(), columns=["category", "score"]
-                    )
-                    .sort_values("score", ascending=False)
-                    .reset_index(drop=True)
-                )
-                subcategories_to_use = subcategory_scores[
-                    subcategory_scores["score"] > 0.15
-                ]["category"].to_list()
-            else:
-                subcategories_to_use = []  # Uses all if []
-
-        if return_probabilities:
-            return {
-                "main_categories": main_categories_to_use,
-                "sub_categories": subcategories_to_use,
-                "main_probs": prediction["main_probs"],
-                "sub_probs": prediction["sub_probs"]
-                if "sub_probs" in prediction.keys()
-                else {},
-            }
-        else:
-            return {
-                "main_categories": main_categories_to_use,
-                "sub_categories": subcategories_to_use,
-            }
-
-    def _combine_categorization_with_search(self, question, top_n, alpha=0.8, use_classifier=True):
+    def _search(self, question, alpha=0.8, use_classifier=True):
         """
         End to end function that takes in a question and returns the results of a hybrid search
         using the question and the categories that the question was classified into.
@@ -207,35 +112,51 @@ class TypesenseRetriever:
         alpha : float
             The weighting parameter for the hybrid search. Higher = more weight on semantic search,
             lower = more weight on keyword search
+        use_classifier : bool
+            Whether or not to use the classifier to filter the results. Recommended to be True.
         """
-        categories = self._select_text_retrieval_categories(question, use_classifier=use_classifier)
+        if use_classifier:
+            categories = self.categorizer.predict(question)
 
-        filter_by_query = f'main_category: {str(categories["main_categories"])}'
+            if categories["sub_categories"] == []:
+                # If there are no subcategories, we can just search by main category
+                filter_by_query = f'main_category: {str(categories["main_categories"])}'
+            else:
+                # If there are subcategories, we need to search by both main and subcategories
+                categories["sub_categories"] = [
+                    subcat.split("|")[1] for subcat in categories["sub_categories"]
+                ]
+                filter_by_query = f'main_category: {str(categories["main_categories"])} && sub_category: {str(categories["sub_categories"])}'
 
-        if categories["sub_categories"] != []:
-            categories["sub_categories"] = [
-                subcat.split("|")[1] for subcat in categories["sub_categories"]
-            ]
-
-            filter_by_query = f'main_category: {str(categories["main_categories"])} && sub_category: {str(categories["sub_categories"])}'
-
-        query = {"q": question, "filter_by": filter_by_query}
+            query = {"q": question, "filter_by": filter_by_query}
+        else:
+            # If we aren't using the classifier, just search by the question
+            query = {"q": question}
 
         response = self.client.multi_search.perform(
             search_queries={"searches": [query]},
             common_params={
-                "collection": "brockport_data_v1",
+                "collection": self.collection_name,
                 "query_by": "embedding,context",
-                "limit": top_n,
+                "limit": 10,
                 "prefix": False,
                 "vector_query": f"embedding:([], alpha: {alpha})",
                 "exclude_fields": "embedding",
             },
         )
 
-        return {"question": question, "categories": categories, "response": response}
+        if use_classifier:
+            return {"question": question, "categories": categories, "response": response}
+        else:
+            return {"question": question, "response": response}
 
-    def retrieve(self, question: str, top_n: int = 3, alpha: float = 0.8, use_classifier: bool = True):
+    def retrieve(
+        self, 
+        question: str, 
+        top_n: int = 3, 
+        alpha: float = 0.8, 
+        use_classifier: bool = True
+    ):
         """
         End to end function that takes in a question and returns the results of a hybrid search
         using the question and the categories that the question was classified into.
@@ -249,25 +170,25 @@ class TypesenseRetriever:
         alpha : float
             The weighting parameter for the hybrid search. Higher = more weight on semantic search,
             lower = more weight on keyword search
+        use_classifier : bool
+            Whether or not to use the classifier to filter the results. Recommended to be True.
         """
         if question == "":
             return "No question given."
 
-        search = self._combine_categorization_with_search(question, top_n, alpha, use_classifier)
+        response = self._search(question, alpha, use_classifier)
 
-        if "code" in search["response"]["results"][0].keys():
+        if "code" in response["response"]["results"][0].keys():
             return "No results found."
 
-        # Pull out the raw text from the results
-        results = [
-            x["document"]["context"] for x in search["response"]["results"][0]["hits"]
-        ]
-
-        # Join the results together
+        # Pull out and merge raw text results
+        results = response['response']['results'][0]
+        results = [x["document"]["context"] for x in results["hits"][0:top_n]]
         results = "\n\n".join(results)
 
         return results
 
+# ----------------------------------------------------------------------------------------------------------------------
 
 class TextRetriever:
     """
