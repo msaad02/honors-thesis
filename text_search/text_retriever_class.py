@@ -151,9 +151,10 @@ class TypesenseRetriever:
         try:
             container = client.containers.get(TYPESENSE_CONTAINER_NAME)
             container.stop()
-            container.wait()
             container.remove()
-            print(f"Container '{TYPESENSE_CONTAINER_NAME}' has been stopped.")
+            # Helpful to see. But just refuses to print before "Abort". It just keeps
+            # writing on top of my command line which is annoying.
+            # print(f"\nContainer '{TYPESENSE_CONTAINER_NAME}' has been stopped.\n")
         except docker.errors.NotFound:
             print(f"Container '{TYPESENSE_CONTAINER_NAME}' not found.")
 
