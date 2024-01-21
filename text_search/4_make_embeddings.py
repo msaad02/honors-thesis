@@ -64,12 +64,4 @@ for category in df['category'].unique():
 data = pd.DataFrame({'embeddings': embeddings, 'data': data})
 data.to_pickle("./data/embeddings.pickle")
 
-
-# OLD FORMAT
-data = {'embeddings': embeddings, 'data': data}
-
-# Save the embeddings
-with open("OLD_embeddings.pickle", "wb") as f:
-    pickle.dump(data, f)
-
 print("\nComplete!")
