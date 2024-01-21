@@ -21,7 +21,6 @@ TYPESENSE_CONTAINER_NAME = "typesense_container"
 
 # NOTE TO SELF:
 # * Semantic retrieval NOT IMPLEMENTED.
-# * Typesesse retrieval is USING CLASSIFIER regardless of checkbox value.
 
 openai_system = """You are a helpful chatbot for SUNY Brockport who answers questions using the context given. Be enthusiastic, straightforward, brief, and happy to help in your responses. In general, prefer to be give broad answers unless the question is asking for details. Do not answer questions unrelated to SUNY Brockport. If the answer is not clear from the context, say "I'm sorry, I don't know"."""
 
@@ -32,6 +31,7 @@ class Manage_QA:
     def __init__(
         self,
         finetuned_model_name: str = "msaad02/llama2_7b_brockportgpt",
+        scratch_model_dir: str = "./scratch_model/models/transformer_v5/",
         main_categorization_model_dir: str = "./text_search/models/main_category_model",
         subcategorization_model_dir: str = "./text_search/models/subcategory_models/",
         embeddings_file: str = "./text_search/data/embeddings.pickle",
@@ -40,26 +40,16 @@ class Manage_QA:
         typesense_protocol: str = "http",
         typesense_collection_name: str = "brockport_data_v1",
         typesense_api_key: str = "xyz",
-        use_classifier: bool = True,
         device: Optional[str] = None,
         openai_api_key: Optional[str] = None,
     ):
-        print("Starting typesense docker container...")
-        self.start_docker_container()
-
         print(colored("Loading Models...\n", color="red", attrs=["bold"]))
         if device is None:
             device = "cuda" if is_available() else "cpu"
             model_type = "gptq" if device == "cuda" else "gguf"
 
-        self.text_retriever = TextRetriever(
-            main_categorization_model_dir=main_categorization_model_dir,
-            subcategorization_model_dir=subcategorization_model_dir,
-            embeddings_file=embeddings_file,
-            question_classifier=use_classifier,
-            device=device,
-        )
-
+        # For typesense retrieval.
+        # It's first since starting the docker container takes a while in the background.
         self.typesense_retriever = TypesenseRetriever(
             main_categorization_model_dir=main_categorization_model_dir,
             subcategorization_model_dir=subcategorization_model_dir,
@@ -68,52 +58,27 @@ class Manage_QA:
             typesense_protocol=typesense_protocol,
             typesense_collection_name=typesense_collection_name,
             typesense_api_key=typesense_api_key,
-            question_classifier=use_classifier,
+            print_categories=True # For logging purposes
         )
 
-        # self.semantic_retriever = SemanticRetriever()
+        # Does semantic search AND semantic/rerank search
+        self.semantic_rerank_retriever = TextRetriever(
+            main_categorization_model_dir=main_categorization_model_dir,
+            subcategorization_model_dir=subcategorization_model_dir,
+            embeddings_file=embeddings_file,
+            device=device,
+            print_categories=True # For logging purposes
+        )
 
         self.openai_client = OpenAI(api_key=openai_api_key)
 
         self.finetuned_model = FineTunedEngine(
-            model_name=finetuned_model_name, model_type=model_type, stream=True
+            model_name=finetuned_model_name, 
+            model_type=model_type, 
+            stream=True
         )
 
-        self.scratch_model = ScratchModel(
-            model_dir="./scratch_model/models/transformer_v5/"
-        )
-
-    def start_docker_container(self):
-        "Starts up typesense docker container if it is not already running."
-        client = docker.from_env()
-
-        start = True
-        try:
-            container = client.containers.get(TYPESENSE_CONTAINER_NAME)
-            if container.status == "running":
-                print("Docker container is already running...")
-                start = False
-
-        except docker.errors.NotFound:
-            print("Docker container not found...")
-
-        if start:
-            print("Docker container is not running. Starting it now...")
-            command = (
-                f"docker run --name {TYPESENSE_CONTAINER_NAME} -p 8108:8108 "
-                "-v /home/msaad/typesense-data:/data "
-                "typesense/typesense:0.25.2 "
-                "--data-dir /data "
-                "--api-key=xyz "
-                "--enable-cors"
-            )
-            subprocess.Popen(
-                command,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                shell=True,
-            )
-            print("Docker container started.\n")
+        self.scratch_model = ScratchModel(model_dir=scratch_model_dir)
             
 
     def get_context(self, question, config):
@@ -124,26 +89,40 @@ class Manage_QA:
         use_classifier = config["use_classifier"]  # True or False
         n_results = config["n_results"]  # (Cannot be 1) Number of RAG results to return
         
+        print("-" * 150)
+        print(colored(f"Search Type: {search_type}", "green"))
+        print(colored(f"Question: {question}", "blue"))
+
         if model_type == "openai":
             if search_type == "none":
                 context = "No search method selected."
             elif search_type == "semantic":
-                context = "Not implemented yet"
-                # context = self.text_retriever.retrieve(question, top_n=n_results)
+                # Search with only semantic search. This uses the same class
+                # as the reraank retriever, but has a different option.
+                context = self.semantic_rerank_retriever.retrieve(
+                    question, 
+                    top_n=n_results, 
+                    use_classifier=use_classifier,
+                    type="semantic"
+                )
             elif search_type == "semantic_rerank":
-                context = self.text_retriever.retrieve(
-                    question, top_n=n_results, use_classifier=use_classifier
+                # Search with semantic retrieval
+                context = self.semantic_rerank_retriever.retrieve(
+                    question, 
+                    top_n=n_results, 
+                    use_classifier=use_classifier,
+                    type="semantic_rerank"
                 )
             elif search_type == "typesense":
+                # Search with typesense
                 context = self.typesense_retriever.retrieve(
-                    question, top_n=n_results, use_classifier=use_classifier
+                    question, 
+                    top_n=n_results, 
+                    use_classifier=use_classifier
                 ) 
         else:
             context = "N/A"
 
-        print("-" * 150)
-        print(colored(f"Search Type: {search_type}", "green"))
-        print(colored(f"Question: {question}", "blue"))
         print(colored(f"Context: {context}", "yellow"))
 
         return context
@@ -207,7 +186,7 @@ def rag(question, history, model_type, search_method, use_classifier, max_result
         "search_type": search_method,
         "use_classifier": use_classifier,
         "n_results": max_results,
-        "model_kwargs": {"temperature": 0.9},
+        "model_kwargs": {"temperature": 0.8},
     }
 
     for result in question_client.run_model(question, config):
@@ -236,23 +215,12 @@ demo = gr.ChatInterface(
 
 def signal_handler(sig, frame):
     "Clean up when the program is interrupted."
-
     print(colored("\n\nInterrupt received, cleaning up...", "red"))
 
     global question_client
     del question_client
 
     tf.keras.backend.clear_session()
-
-    client = docker.from_env()
-    try:
-        container = client.containers.get(TYPESENSE_CONTAINER_NAME)
-        container.stop()
-        container.remove()
-        print(f"Container '{TYPESENSE_CONTAINER_NAME}' has been stopped.")
-    except docker.errors.NotFound:
-        print(f"Container '{TYPESENSE_CONTAINER_NAME}' not found.")
-
     sys.exit(0)
 
 

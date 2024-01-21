@@ -25,6 +25,7 @@ try:
 except:
     categorized_data = pd.read_csv("chunked_data.csv")
 
+# Remove url category and rename
 categorized_data = categorized_data.loc[:, ['category', 'subcategory', 'chunked_data']]
 df = categorized_data.rename(columns={'chunked_data': 'data'})
 
@@ -51,18 +52,24 @@ for category in df['category'].unique():
         for subcategory in subcategories:
             data_to_embed = category_df[category_df['subcategory'] == subcategory]['data'].to_list()
             if data_to_embed != []:
-                embeddings[f"{category}-{subcategory}"] = model.encode(data_to_embed, normalize_embeddings=True)
-                data[f"{category}-{subcategory}"] = data_to_embed
+                embeddings[f"{category}|{subcategory}"] = model.encode(data_to_embed, normalize_embeddings=True)
+                data[f"{category}|{subcategory}"] = data_to_embed
     else:
         data_to_embed = category_df['data'].to_list()
         if data_to_embed != []:
             embeddings[category] = model.encode(data_to_embed, normalize_embeddings=True)
             data[category] = data_to_embed
 
+# Save the embeddings as pickle since you can't serialize numpy arrays
+data = pd.DataFrame({'embeddings': embeddings, 'data': data})
+data.to_pickle("./data/embeddings.pickle")
+
+
+# OLD FORMAT
 data = {'embeddings': embeddings, 'data': data}
 
 # Save the embeddings
-with open("embeddings.pickle", "wb") as f:
+with open("OLD_embeddings.pickle", "wb") as f:
     pickle.dump(data, f)
 
 print("\nComplete!")

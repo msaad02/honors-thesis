@@ -4,7 +4,6 @@ split into its own class, and each class has its own documentation. The classes 
 
 1. TypesenseRetriever: Uses categorization and Typesense for hybrid search
 2. TextRetriever: Uses categorization, semantic search and reranking for text retrieval
-3. SemanticRetriever: Uses semantic search exclusively for text retrieval
 
 Each of these classes have slightly different dependencies and interfaces. To get any
 working you need to run the setup scripts specified in their descriptions. Alternatively,
@@ -13,7 +12,11 @@ without any issues, provided typesense is running and you have a valid OPENAI_AP
 environment variable set.
 
 Each class has a `retrieve` function that takes in a question and returns the results.
+
+Note that the TextRetriever class doubles as a pure semantic search retriever
+since it has the option to not use the reranker.
 """
+
 import os
 import sys
 
@@ -26,20 +29,10 @@ import pandas as pd
 import numpy as np
 import typesense
 import torch
-import pickle
+import docker
+import subprocess
 
-# Todo:
-# 1. Finish question classifier rework. Integrate into text retriever. TypesenseRetriever is done.
-# 2. Create the semantic retriever.
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-class SemanticRetriever:
-    def __init__():
-        pass
-
-    def retrieve():
-        pass
+TYPESENSE_CONTAINER_NAME = "typesense_container"
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -66,7 +59,8 @@ class TypesenseRetriever:
         typesense_port: str = "8108",
         typesense_protocol: str = "http",
         typesense_collection_name: str = "brockport_data_v1",
-        typesense_api_key: str = "xyz"
+        typesense_api_key: str = "xyz",
+        print_categories: bool = False
     ):
         """
         Initialize the TypesenseRetrieval object. This will create a connection to
@@ -74,6 +68,15 @@ class TypesenseRetriever:
 
         I've been using the Typesense docker image, so defaults are set to that.
         """
+        # Start the typesense docker container if it is not already running
+
+        # NOTE: This is helpful automation for me, the author, but I suspect it will be a breaking
+        # issue for other people. If you don't want this, just manually setup your typesense server
+        # via docker and then set the typesense_host, typesense_port, typesense_protocol, and
+        # typesense_api_key parameters to the correct values. Then COMMENT OUT the following line!
+        # There is a similar line in the `__del__` function. Make sure to comment that out too!
+        self.start_docker_container()
+
         self.client = typesense.Client(
             {
                 "nodes": [
@@ -97,6 +100,63 @@ class TypesenseRetriever:
             subcategorization_model_dir=subcategorization_model_dir,
         )
 
+        # Just included so in the app we can see what categories the question was classified into
+        self.print_categories = print_categories
+
+
+    def start_docker_container(self):
+        """
+        Starts up typesense docker container if it is not already running.
+
+        NOTE: This is helpful automation for me, the author, but I suspect its a breaking
+        issue for other people. If you don't want this, comment out the start_docker_container
+        line, and remove the stop_docker_container function call in __del__(). Instead, you can
+        just manually setup your typesense server via docker and set the parameters in the 
+        `__init__` function to the correct values.
+        """
+        client = docker.from_env()
+
+        start = True
+        try:
+            container = client.containers.get(TYPESENSE_CONTAINER_NAME)
+            if container.status == "running":
+                print("Docker container is already running...")
+                start = False
+
+        except docker.errors.NotFound:
+            print("Docker container not found...")
+
+        if start:
+            print("Docker container is not running. Starting it now...")
+            command = (
+                f"docker run --name {TYPESENSE_CONTAINER_NAME} -p 8108:8108 "
+                "-v /home/msaad/typesense-data:/data "
+                "typesense/typesense:0.25.2 "
+                "--data-dir /data "
+                "--api-key=xyz "
+                "--enable-cors"
+            )
+            subprocess.Popen(
+                command,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                shell=True,
+            )
+            print("Docker container started.\n")
+
+
+    def stop_docker_container(self):
+        "Stops the typesense docker container if it is running."
+        client = docker.from_env()
+        try:
+            container = client.containers.get(TYPESENSE_CONTAINER_NAME)
+            container.stop()
+            container.wait()
+            container.remove()
+            print(f"Container '{TYPESENSE_CONTAINER_NAME}' has been stopped.")
+        except docker.errors.NotFound:
+            print(f"Container '{TYPESENSE_CONTAINER_NAME}' not found.")
+
 
     def _search(self, question, alpha=0.8, use_classifier=True):
         """
@@ -117,6 +177,8 @@ class TypesenseRetriever:
         """
         if use_classifier:
             categories = self.categorizer.predict(question)
+            if self.print_categories:
+                print(categories)
 
             if categories["sub_categories"] == []:
                 # If there are no subcategories, we can just search by main category
@@ -131,6 +193,9 @@ class TypesenseRetriever:
             query = {"q": question, "filter_by": filter_by_query}
         else:
             # If we aren't using the classifier, just search by the question
+            if self.print_categories:
+                print("Selected 'no categorization' - continuing with searching all categories...")
+
             query = {"q": question}
 
         response = self.client.multi_search.perform(
@@ -187,6 +252,11 @@ class TypesenseRetriever:
         results = "\n\n".join(results)
 
         return results
+    
+    def __del__(self):
+        "When the object is deleted, stop the typesense docker container."
+        self.stop_docker_container()
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -216,10 +286,13 @@ class TextRetriever:
     comprehensive text retrieval system.
 
     -----------------------------------------------------------------------------------------------
-    NOTE: For each function there is a metadata parameter. If set to True, the function will return
-    a tuple with the output and a dictionary containing metadata about all the previous function
-    results. This is useful for debugging and understanding the output of the function. If set to
-    False, the function will only return the output of the current step, which is the default behavior.
+    NOTE: You can optionally use the classifier to filter the results, and you can also optionally
+    use the reranker or not. So there are a total of 4 different ways to use this class:
+
+    1. Use the classifier and the reranker (which uses the classifier + semantic search + reranker model)
+    2. Use the classifier and not the reranker (which uses the classifier + ONLY semantic search)
+    3. Don't use the classifier and use the reranker (which uses semantic search + reranker model)
+    4. Don't use the classifier and don't use the reranker (which uses ONLY semantic search)
     -----------------------------------------------------------------------------------------------
     """
 
@@ -229,26 +302,20 @@ class TextRetriever:
         subcategorization_model_dir: str = "./models/subcategory_models/",
         embeddings_file: str = "./data/embeddings.pickle",
         device: str = "cuda" if torch.cuda.is_available() else "cpu",
-        question_classifier: bool = True,
+        print_categories: bool = False
     ):
         self.device = device
-        self.question_classifier = question_classifier
+        self.print_categories = print_categories
 
         # Categorization
-        self.main_classifier = QuestionClassifier(
-            model_dir=main_categorization_model_dir
+        self.categorizer = QuestionClassifier(
+            main_categorization_model_dir=main_categorization_model_dir,
+            subcategorization_model_dir=subcategorization_model_dir,
         )
-        self.subcategory_classifiers = {}
-        for subcat in os.listdir(subcategorization_model_dir):
-            self.subcategory_classifiers[subcat] = QuestionClassifier(
-                subcategorization_model_dir + subcat
-            )
 
         # Get embeddings and model
         self.embedding_model = SentenceTransformer("BAAI/bge-large-en-v1.5")
-        embeddings = pickle.load(open(embeddings_file, "rb"))
-        self.embeddings = embeddings["embeddings"]
-        self.data = embeddings["data"]
+        self.embeddings = pd.read_pickle(embeddings_file)
 
         # Reranker
         self.rerank_tokenizer = AutoTokenizer.from_pretrained("BAAI/bge-reranker-large")
@@ -257,128 +324,10 @@ class TextRetriever:
         ).to(self.device)
         self.rerank_model.eval()
 
-    def _classify_question(self, question: str, return_probabilities: bool = False):
-        """
-        Classifies user question into a main category and subcategory (if applicable).
-
-        There is no other processing done in this step, it returns a dictionary with relevant
-        information for the next step, and an option to return the probabilities of the model
-        to better understand the model's confidence in its prediction.
-        """
-        prediction = {}
-        if return_probabilities:
-            (
-                prediction["category"],
-                prediction["main_probs"],
-            ) = self.main_classifier.predict(question, True)
-        else:
-            prediction["category"] = self.main_classifier.predict(question)
-
-        category = prediction["category"]
-        if category in self.subcategory_classifiers:
-            subcategory_classifier = self.subcategory_classifiers[category]
-
-            if return_probabilities:
-                prediction["subcategory"], sub_probs = subcategory_classifier.predict(
-                    question, True
-                )
-                prediction["sub_probs"] = {
-                    f"{category}-{subcat}": prob for subcat, prob in sub_probs.items()
-                }
-            else:
-                prediction["subcategory"] = subcategory_classifier.predict(question)
-        return prediction
-
-    def _get_text_retrieval_places(self, question: str, metadata: bool = False, use_classifier: bool = True):
-        """
-        High level interface between the classifier and the user. Tells us where to do
-        text retrieval based on the probability output of the categorization models.
-
-        It does this by returning the top categories with confidence  <0.2 difference from
-        the highest probability category. (I refer to confidence as the model's probability output.)
-
-        If the model outputted a max confidence of <0.5, then it returns all categories
-        to stay safe. This was chosen because the classifier works best when it is confident
-        in my experience, and when it is not confident there is usually a grey area.
-
-        Returns:
-            dict: {
-                'main_categories': [str],
-                'subcategories': [str]
-            }
-        """
-        prediction = self._classify_question(question, True)
-
-        # main category
-        main_cat_probs_df = (
-            pd.DataFrame(
-                [
-                    (category, prob)
-                    for category, prob in prediction["main_probs"].items()
-                ],
-                columns=["category", "probability"],
-            )
-            .sort_values(by="probability", ascending=False)
-            .reset_index(drop=True)
-        )
-
-        # Highest category probability
-        max_main_prob = main_cat_probs_df["probability"][0]
-
-        # if max_main_prob < 0.5: use everything regardless (classifier is not confident enough)
-        if max_main_prob < 0.5 or not self.question_classifier or not use_classifier:
-            main_categories_to_use = main_cat_probs_df["category"].tolist()
-            subcategories_to_use = list(self.subcategory_classifiers.keys())
-        else:
-            # Use all categories at the top within 0.2 of the best category
-            main_categories_to_use = main_cat_probs_df[
-                main_cat_probs_df["probability"] > max_main_prob - 0.2
-            ]["category"].tolist()
-
-            if "sub_probs" in prediction.keys():
-                subcategory_probs_df = (
-                    pd.DataFrame(
-                        [
-                            (category, prob)
-                            for category, prob in prediction["sub_probs"].items()
-                        ],
-                        columns=["category", "probability"],
-                    )
-                    .sort_values(by="probability", ascending=False)
-                    .reset_index(drop=True)
-                )
-
-                # Highest subcategory probability
-                max_sub_prob = subcategory_probs_df["probability"][0]
-
-                # Subcategories within 0.2 of the highest subcategory
-                subcategories_to_use = subcategory_probs_df[
-                    subcategory_probs_df["probability"] > max_sub_prob - 0.2
-                ]["category"].tolist()
-
-        text_retreival_places = {
-            "main_categories": main_categories_to_use,
-            "subcategories": subcategories_to_use
-            if "sub_probs" in prediction.keys()
-            else [],
-        }
-
-        if metadata:
-            metadata_dict = {
-                "question": question,
-                "prediction": prediction,
-                "text_retreival_places": text_retreival_places,
-            }
-            return text_retreival_places, metadata_dict
-        else:
-            return text_retreival_places
-
     def _semantic_search(
         self,
         question: str,
         top_n: int = 25,
-        metadata: bool = False,
-        # callback_all_categories: bool = False,
         use_classifier: bool = True,
     ):
         """
@@ -387,65 +336,75 @@ class TextRetriever:
         It returns the `top_n` results from the semantic search. The output of this function is a dataframe
         containing the text and the semantic similarity score - higher is better.
         """
-        # if not callback_all_categories:
-        text_retrieval_places = self._get_text_retrieval_places(
-            question, metadata=metadata, use_classifier=use_classifier
-        )
-        # else:
-        #     text_retrieval_places = self._get_text_retrieval_places(
-        #         "", metadata=metadata
-        #     )
-
-        if metadata:
-            text_retrieval_places, metadata_dict = text_retrieval_places
-
         instruction = "Represent this sentence for searching relevant passages: "
         question_embedding = self.embedding_model.encode(
             [instruction + question], normalize_embeddings=True
         )
 
-        text_embedding_for_question = []
-        raw_text_for_question = []
+        if use_classifier:
+            categories = self.categorizer.predict(question)
+            if self.print_categories:
+                print(categories)
 
-        for category in text_retrieval_places["main_categories"]:
-            if category in self.embeddings.keys():
-                text_embedding_for_question.extend(self.embeddings[category])
-                raw_text_for_question.extend(self.data[category])
+            # Building the search list (categories to filter to in the embeddings dataframe)
+            if categories['sub_categories'] != []:
+                search_list = list(set(categories['main_categories'] + categories['sub_categories']))
+            else:
+                # This is weird, but since I'm treating 'sub_categories' as ALL if I return [] (empty list), 
+                # then I need to actually return all the possible subcategories that are inside the main categories selected.
 
-        for subcategory in text_retrieval_places["subcategories"]:
-            if subcategory in self.embeddings.keys():
-                text_embedding_for_question.extend(self.embeddings[subcategory])
-                raw_text_for_question.extend(self.data[subcategory])
+                # Short explanation: For this retrieval system I'm searching for categories to INCLUDE, not EXCLUDE like in the
+                # typesense search for instance, so if I were to return [] (empty list) then I would NOT SEARCH the subcategories,
+                # which is not what I want. I want to search ALL subcategories if I return [] (empty list).
+
+                # So, since all "subcategories" are labeled as "main_catgory|sub_category", I can just iterate through the
+                # index of the embeddings and check if any of the main categories are in that "main_category" part of the index.
+                tf_list = [category in categories['main_categories'] for category in self.embeddings.index.str.split('|').str[0]]
+                search_list = list(set(categories['main_categories'] + self.embeddings.loc[tf_list].index.to_list()))
+
+            # Now that I have the search list, I can just filter through it and get the embeddings and raw text
+            search_list_fixed = []
+
+            for category in search_list:
+                if category in self.embeddings.index:
+                    search_list_fixed.append(category)
+                        
+            embeddings_and_text = self.embeddings.loc[search_list_fixed]
+
+        else:
+            if self.print_categories:
+                print("Selected 'no categorization' - continuing with searching all categories...")
+            
+            # If no categories are found, then just search all categories
+            embeddings_and_text = self.embeddings
+
+        corpus_embeddings = embeddings_and_text["embeddings"].to_list()
+        corpus_text = embeddings_and_text["data"].to_list()
+
+        # Flatten the lists (instead of lists of lists, we want a single big list)
+        corpus_embeddings = [item for sublist in corpus_embeddings for item in sublist]
+        corpus_text = [item for sublist in corpus_text for item in sublist]
 
         try:
-            corpus_embeddings = np.stack(text_embedding_for_question)
+            corpus_embeddings = np.stack(corpus_embeddings)
         except:
-            Warning("Category error. Re-do with all categories.")
-            return self._semantic_search(
-                question, top_n, metadata, callback_all_categories=True
-            )
+            raise ValueError("No relevant text found for this question.")
 
         similarity = question_embedding @ corpus_embeddings.T
-        top_args = similarity[0].argsort()[::-1][:top_n]
 
         data = (
-            pd.DataFrame(
-                {
-                    "text": pd.Series(raw_text_for_question)[top_args],
-                    "semantic_similarity": similarity[0][top_args],
-                }
-            )
+            pd.DataFrame({
+                "text": corpus_text,
+                "semantic_similarity": similarity[0]
+            })
             .sort_values(by="semantic_similarity", ascending=False)
+            .drop_duplicates(subset=["text"])
             .reset_index(drop=True)
+            .iloc[0:top_n, :]
         )
+        return data
 
-        if metadata:
-            metadata_dict["similarity_scores"] = data.to_json()
-            return data, metadata_dict
-        else:
-            return data
-
-    def _rerank(self, question: str, top_n: int = 25, metadata: bool = False, use_classifier: bool = True):
+    def _rerank(self, question: str, top_n: int = 50, use_classifier: bool = True):
         """
         Pefroms reranking on the top n results of the text retreival step. This uses the classifier
         model and semantic search to filter to a small set of results, then "reranks" them to find the
@@ -464,10 +423,7 @@ class TextRetriever:
         faster results, but potentially worse results. (In reality, the semantic search and reranker are
         correlated pretty well, so the reranker can still do a good job with a small number of results.)
         """
-        matches = self._semantic_search(question, top_n, metadata=metadata, use_classifier=use_classifier)
-
-        if metadata:
-            matches, metadata_dict = matches
+        matches = self._semantic_search(question, top_n, use_classifier=use_classifier)
 
         pairs = [[question, text] for text in matches["text"].to_list()]
 
@@ -482,9 +438,7 @@ class TextRetriever:
 
             matches["rerank_similarity"] = (
                 self.rerank_model(**inputs, return_dict=True)
-                .logits.view(
-                    -1,
-                )
+                .logits.view(-1)
                 .float()
                 .cpu()
             )
@@ -492,20 +446,16 @@ class TextRetriever:
                 by="rerank_similarity", ascending=False
             ).reset_index(drop=True)
 
-        if metadata:
-            metadata_dict["similarity_scores"] = matches.to_json()
-            return matches, metadata_dict
-        else:
-            return matches
+        return matches
 
     def retrieve(
         self,
         question: str,
         top_n: int = 3,
         join_char: str = "\n\n",
-        top_n_semantic: int = 25,
-        metadata: bool = False,
+        top_n_semantic: int = 50,
         use_classifier: bool = True,
+        type: str = "semantic_rerank", # "semantic_rerank" or "semantic"
     ):
         """
         Retrieves the top n results for a given question. This is the main function of the class.
@@ -522,18 +472,20 @@ class TextRetriever:
             join_char (str): The character to join the results with
             top_n_semantic (int): The number of results to return from the semantic search step (influences search results)
             metadata (bool): Whether to return metadata about the function results
+            use_classifier (bool): Whether to use the classifier to filter the results
+            type (str): Whether to use the "semantic_rerank or only "semantic" search method
         """
-
-        rerank = self._rerank(question, top_n_semantic, metadata=metadata, use_classifier=use_classifier)
-
-        if metadata:
-            rerank, metadata_dict = rerank
-
-        rerank = rerank.head(top_n)
-        text = join_char.join(rerank["text"].to_list())
-
-        if metadata:
-            metadata_dict["text"] = text
-            return text, metadata_dict
+        if question == "":
+            return "No question given."
+        
+        if type == "semantic_rerank":
+            results = self._rerank(question, top_n_semantic, use_classifier=use_classifier)
+        elif type == "semantic":
+            results = self._semantic_search(question, top_n_semantic, use_classifier=use_classifier)
         else:
-            return text
+            raise ValueError("Invalid type. Must be 'semantic_rerank' or 'semantic'.")
+
+        results = results.head(top_n)
+        text = join_char.join(results["text"].to_list())
+
+        return text
