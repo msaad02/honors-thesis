@@ -75,6 +75,7 @@ class TypesenseRetriever:
         # via docker and then set the typesense_host, typesense_port, typesense_protocol, and
         # typesense_api_key parameters to the correct values. Then COMMENT OUT the following line!
         # There is a similar line in the `__del__` function. Make sure to comment that out too!
+        self.client = docker.from_env()
         self.start_docker_container()
 
         self.client = typesense.Client(
@@ -114,11 +115,9 @@ class TypesenseRetriever:
         just manually setup your typesense server via docker and set the parameters in the 
         `__init__` function to the correct values.
         """
-        client = docker.from_env()
-
         start = True
         try:
-            container = client.containers.get(TYPESENSE_CONTAINER_NAME)
+            container = self.client.containers.get(TYPESENSE_CONTAINER_NAME)
             if container.status == "running":
                 print("Docker container is already running...")
                 start = False
@@ -147,16 +146,15 @@ class TypesenseRetriever:
 
     def stop_docker_container(self):
         "Stops the typesense docker container if it is running."
-        client = docker.from_env()
         try:
-            container = client.containers.get(TYPESENSE_CONTAINER_NAME)
+            container = self.client.containers.get(TYPESENSE_CONTAINER_NAME)
             container.stop()
             container.remove()
             # Helpful to see. But just refuses to print before "Abort". It just keeps
             # writing on top of my command line which is annoying.
             # print(f"\nContainer '{TYPESENSE_CONTAINER_NAME}' has been stopped.\n")
-        except docker.errors.NotFound:
-            print(f"Container '{TYPESENSE_CONTAINER_NAME}' not found.")
+        except:
+            print(f"There was an error shutting down '{TYPESENSE_CONTAINER_NAME}', please manually remove.")
 
 
     def _search(self, question, alpha=0.8, use_classifier=True):

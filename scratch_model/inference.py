@@ -19,14 +19,15 @@ you can iterate over to get the output of the model one token at a time.
 ...     clear_output(wait=True) # If using ipynb
 """
 
-import os
 import sys
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # prevent tensorflow logs
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # hide tensorflow logs
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
+# Set path to parent directory so we can import from other folders.
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from dataset import standardize     # Crucial to reload the text processor
-from model import Transformer       # Model architecture
+from .dataset import standardize     # Crucial to reload the text processor
+from .model import Transformer       # Model architecture
 import tensorflow as tf
 import json
 import re
@@ -90,7 +91,7 @@ class ScratchModel(tf.Module):
         text = text[0].upper() + text[1:]
         return text
 
-    @tf.autograph.experimental.do_not_convert
+    # @tf.autograph.experimental.do_not_convert
     def _predict_next(self, question, output_array, i):
         "Predicts the next token given the question and the output array"
         output = tf.transpose(output_array.stack())

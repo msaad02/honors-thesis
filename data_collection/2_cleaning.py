@@ -70,7 +70,7 @@ df = df[df['data'].str.len() > 275]
 
 # Drop rows where the URL contains any of the strings in the list
 strings_to_remove = [
-    '/transfer.credit/planning.guide', 
+    '/transfer.credit/planning.guide/general-education/.*/$', 
     '/archive/', 
     '/archives/', 
     'edu/go', 

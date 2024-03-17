@@ -10,11 +10,8 @@ so that we can easily access the embeddings for each category and subcategory,
 as well as the underlying data that was used to create the embeddings.
 """
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
-from datasets import load_dataset
 import pandas as pd
-import pickle
 
 # Create all the embeddings for the categories and subcategories
 model = SentenceTransformer('BAAI/bge-large-en-v1.5')

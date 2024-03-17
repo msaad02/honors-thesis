@@ -41,9 +41,12 @@ categorized_data['chunked_data'] = chunked_data
 categorized_data = categorized_data.dropna().reset_index(drop=True)
 categorized_data = categorized_data.explode('chunked_data').loc[:, ['url', 'category', 'subcategory', 'chunked_data']].reset_index(drop=True)
 
-# Filter to only chunks with less than 100 words
-# Inspecting the data, mostly chunks with >100 words are just a bunch of bullet points of long lists about profs, programs, etc.
-categorized_data = categorized_data[categorized_data['chunked_data'].str.split().str.len() < 100].reset_index(drop=True)
+# Filter to only chunks with less than 80 words and greater than 15 words
+# Inspecting the data, mostly chunks with >80 words are just a bunch of bullet points of long lists about profs, programs, etc.
+categorized_data = categorized_data[categorized_data['chunked_data'].str.split().str.len() < 80].reset_index(drop=True)
+
+# Chunks with <15 words are typically just a title or a section header. These don't add much value to the embeddings.
+categorized_data = categorized_data[categorized_data['chunked_data'].str.split().str.len() > 15].reset_index(drop=True)
 
 # # This is the distribution of the number of words per chunk. Should look nice and pretty (~Normal).
 # categorized_data['chunked_data'].str.split().str.len().hist(bins=30)

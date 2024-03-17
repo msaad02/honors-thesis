@@ -20,14 +20,14 @@ import json
 
 # ---- Model parameters ----
 BATCH_SIZE = 64
-EPOCHS = 12  # Most likely not optimal, but it works fairly well
+EPOCHS = 13  # Most likely not optimal, but it works fairly well
 NUM_LAYERS = 6  # 4
 D_MODEL = 512  # 128
 DFF = 2048  # 512
 NUM_HEADS = 8  # 8
 DROPOUT_RATE = 0.1  # 0.1
 
-save_dir = "./models/transformer_v5/"
+save_dir = "./models/transformer_v7/"
 
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
@@ -129,6 +129,16 @@ params = {
 
 with open(os.path.join(save_dir, "params.json"), "w") as f:
     json.dump(params, f)
+
+# Export the loss and validation loss per epoch to a json file
+loss_dict = json.dumps({
+    'loss': transformer.history.history['loss'], 
+    'val_loss': transformer.history.history['val_loss']
+})
+
+with open(os.path.join(save_dir, "loss.json"), "w") as f:
+    f.write(loss_dict)
+
 
 # ---- Export text processor ----
 txt_model = tf.keras.Sequential([text_processor])

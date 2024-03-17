@@ -35,7 +35,7 @@ class RAG:
         typesense_protocol: str = "http",
         typesense_collection_name: str = "brockport_data_v1",
         typesense_api_key: str = "xyz",
-        device: [str] = 'cuda' if is_available() else 'cpu',
+        device: str = 'cuda' if is_available() else 'cpu',
         openai_api_key: str = None,
         category_logging: bool = False, # Print categories to console or not
     ):
@@ -144,7 +144,7 @@ class RAG:
             return self._return_result(response)
         
 
-    def _stream_result(self, generator: types.GeneratorType) -> str:
+    def _stream_result(self, generator: types.GeneratorType):
         "Streams the result from the generator."
 
         message = ""

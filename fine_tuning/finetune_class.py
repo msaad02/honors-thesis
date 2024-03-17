@@ -20,7 +20,7 @@ Below is an inquiry related to SUNY Brockport - from academics, admissions, and 
 ### Response:
 """
 
-class FineTunedEngine():
+class FineTunedModel():
     """
     Class to interact with fine-tuned models
     """
@@ -61,6 +61,15 @@ class FineTunedEngine():
             )
         else:
             raise ValueError(f"Invalid model type: {model_type}")
+        
+
+    def _stream_output(self, generator):
+            answer = ""
+            for token in generator:
+                answer += token
+                # print(token, end="", flush=True) # flush=True to print immediately
+                yield answer
+                
                 
     def __call__(
             self, 
@@ -99,12 +108,8 @@ class FineTunedEngine():
             "reset": reset
         }
         
-        answer = ""
         if self.stream:
-            for token in self.model(**llm_config):
-                answer += token
-                # print(token, end="", flush=True) # flush=True to print immediately
-                yield answer
+            return self._stream_output(self.model(**llm_config))
 
         elif not self.stream:
             answer = self.model(**llm_config)

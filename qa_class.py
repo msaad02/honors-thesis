@@ -52,13 +52,12 @@ You can reduce the amount of printing but adjusting "category_logging" and
 """
 
 
-from fine_tuning.finetune_class import FineTunedEngine
+from fine_tuning.finetune_class import FineTunedModel
 from scratch_model.inference import ScratchModel
 from text_search.rag import RAG
 from torch.cuda import is_available
 from termcolor import colored
-from typing import Any, Optional
-from tensorflow.python.keras.backend import clear_session
+from typing import Optional
 
 class Manage_QA:
     def __init__(
@@ -95,7 +94,7 @@ class Manage_QA:
             category_logging=True,  # Print categories to console or not - I find this helpful
         )
 
-        self.finetuned_model = FineTunedEngine(
+        self.finetuned_model = FineTunedModel(
             model_name=finetuned_model_name,
             model_type=model_type,
             stream=True

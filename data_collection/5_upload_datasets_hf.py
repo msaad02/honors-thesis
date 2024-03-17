@@ -17,9 +17,13 @@ of questions and answers from the GPT-3.5 and GPT-4 generated datasets. These ar
 
 # NOTE: May need to login to huggingfacehub if you want to push to hub
 
+# Ideally you do this with `huggingface-cli login`, but it stopped working for
+# me so I just manually set it with an environment variable.
+
 from datasets import load_dataset, Dataset
 import pandas as pd
 import json
+import os
 
 RAW_SCRAPER_OUTPUT = "data/raw_scraper_output.json"
 GPT_3_5_DATA_QA = "data/gpt_3.5_data_qa.csv"
@@ -39,25 +43,25 @@ raw_scraper_output_df = pd.DataFrame({
 })
 
 dataset = Dataset.from_pandas(raw_scraper_output_df)
-dataset.push_to_hub("msaad02/raw-scraper-output")
+dataset.push_to_hub("msaad02/raw-scraper-output", token=os.getenv("HUGGINGFACE_TOKEN"))
 
 # ---------------------------------------------------------- #
 # 2 - Upload GPT-3.5 data
 
 dataset = load_dataset("csv", data_files=GPT_3_5_DATA_QA)
-dataset.push_to_hub("msaad02/gpt-3.5-data-qa")
+dataset.push_to_hub("msaad02/gpt-3.5-data-qa", token=os.getenv("HUGGINGFACE_TOKEN"))
 
 # ---------------------------------------------------------- #
 # 3 - Upload GPT-4 data
 
 dataset = load_dataset("csv", data_files=GPT_4_DATA_QA)
-dataset.push_to_hub("msaad02/gpt-4-data-qa")
+dataset.push_to_hub("msaad02/gpt-4-data-qa", token=os.getenv("HUGGINGFACE_TOKEN"))
 
 # ---------------------------------------------------------- #
 # 4 - Upload categorized data
 
 dataset = load_dataset("csv", data_files=CATEGORIZED_DATA)
-dataset.push_to_hub("msaad02/categorized-data")
+dataset.push_to_hub("msaad02/categorized-data", token=os.getenv("HUGGINGFACE_TOKEN"))
 
 # ---------------------------------------------------------- #
 # 5 - Upload full lists of questions and answers
@@ -82,15 +86,17 @@ def get_qa_dataset(df: pd.DataFrame) -> Dataset:
         questions.extend(list_of_questions)
 
     dataset = Dataset.from_list(questions)
+    # For consistency in comparison evals train/test split set here
+    dataset = dataset.train_test_split(test_size=0.1)
     return dataset
 
 # GPT-3.5
 gpt35_dataset = get_qa_dataset(pd.read_csv(GPT_3_5_DATA_QA))
-gpt35_dataset.push_to_hub("msaad02/brockport-gpt-3.5-qa")
+gpt35_dataset.push_to_hub("msaad02/brockport-gpt-3.5-qa", token=os.getenv("HUGGINGFACE_TOKEN"))
 
 # GPT-4
 gpt4_dataset = get_qa_dataset(pd.read_csv(GPT_4_DATA_QA))
-gpt4_dataset.push_to_hub("msaad02/brockport-gpt-4-qa")
+gpt4_dataset.push_to_hub("msaad02/brockport-gpt-4-qa", token=os.getenv("HUGGINGFACE_TOKEN"))
 
 # ---------------------------------------------------------- #
 
