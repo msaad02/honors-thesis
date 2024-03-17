@@ -14,17 +14,16 @@ After setting up the environment, you can run the following command to finetune 
 
 ```bash
 $ python finetune_llama.py \
---dataset_name msaad02/formatted-ss-cleaned-brockport-qa \
+--model_name meta-llama/Llama-2-7b-chat-hf \
+--dataset_name msaad02/brockport-gpt-4-qa \
+--per_device_train_batch_size 16 \
+--per_device_eval_batch_size 4 \
+--num_train_epochs 3 \
 --subset data/ \
 --streaming False \
---size_valid_set 100 \
 --seq_length 512
---packing False \
---max_steps 10
 ```
 
-- max_steps: Short for now, just to test. -- it still did 500 steps? Odd...
-- packing: Not sure what packing does...
 
 # Quantizing the model from huggingface
 

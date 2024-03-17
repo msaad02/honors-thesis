@@ -20,6 +20,11 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from trl import SFTTrainer
 from trl.trainer import ConstantLengthDataset
 
+system_prompt = """You are a helpful, respectful and honest assistant for SUNY Brockport, a public college in Brockport, New York. Always answer as helpfully as possible, while being safe.  Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.
+
+If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."""
+
+prompt = lambda question, answer: f"""<s>[INST] <<SYS>> {system_prompt} <</SYS>> {question} [/INST] {answer}</s>"""
 
 @dataclass
 class ScriptArguments:
@@ -35,6 +40,7 @@ class ScriptArguments:
     seq_length: Optional[int] = field(default=1024, metadata={"help": "the sequence length"})
     num_workers: Optional[int] = field(default=4, metadata={"help": "the number of workers"})
 
+    num_train_epochs: Optional[int] = field(default=3, metadata={"help": "the number of training epochs"})
     max_steps: Optional[int] = field(default=500, metadata={"help": "the maximum number of sgd steps"})
     logging_steps: Optional[int] = field(default=10, metadata={"help": "the logging frequency"})
     save_steps: Optional[int] = field(default=10, metadata={"help": "the saving frequency"})
@@ -99,18 +105,19 @@ def print_trainable_parameters(model):
 
 def prepare_sample_text(example):
     """Prepare the text from a sample of the dataset."""
-    # text = f"Question: {example['question']}\n\nAnswer: {example['response_j']}"
-    return example['text'] # specific to my dataset 
+    # This is specific to my dataset
+    text = prompt(example['question'], example['answer'])
+    return text
 
 
 def create_datasets(tokenizer, args):
     dataset = load_dataset(
         args.dataset_name,
-        data_dir=args.subset,
+        #data_dir=args.subset,
         split=args.split,
-        token=True,
-        num_proc=args.num_workers if not args.streaming else None,
-        streaming=args.streaming,
+        #token=True,
+        #num_proc=args.num_workers if not args.streaming else None,
+        #streaming=args.streaming,
     )
     if args.streaming:
         print("Loading the dataset in streaming mode")
@@ -181,7 +188,8 @@ training_args = TrainingArguments(
     per_device_eval_batch_size=script_args.per_device_eval_batch_size,
     learning_rate=script_args.learning_rate,
     logging_steps=script_args.logging_steps,
-    max_steps=script_args.max_steps,
+    num_train_epochs=script_args.num_train_epochs,
+    # max_steps=script_args.max_steps,
     report_to=script_args.log_with,
     save_steps=script_args.save_steps,
     group_by_length=script_args.group_by_length,
@@ -190,7 +198,7 @@ training_args = TrainingArguments(
     optim=script_args.optimizer_type,
     bf16=True,
     remove_unused_columns=False,
-    run_name="sft_llama2",
+    run_name="BrockportGPT-7B-v2",
 )
 
 train_dataset, eval_dataset = create_datasets(tokenizer, script_args)
@@ -201,7 +209,7 @@ trainer = SFTTrainer(
     eval_dataset=eval_dataset,
     peft_config=peft_config,
     packing=script_args.packing,
-    max_seq_length=512, # changed from default "None". Shouldn't affect much?
+    max_seq_length=None,
     tokenizer=tokenizer,
     args=training_args,
 )
