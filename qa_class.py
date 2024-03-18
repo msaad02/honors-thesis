@@ -62,8 +62,8 @@ from typing import Optional
 class Manage_QA:
     def __init__(
         self,
-        finetuned_model_name: str = "msaad02/llama2_7b_brockportgpt",
-        scratch_model_dir: str = "./scratch_model/models/transformer_v5/",
+        finetuned_model_name: str = "msaad02/BrockportGPT-7b",
+        scratch_model_dir: str = "./scratch_model/models/transformer_v7/",
         main_categorization_model_dir: str = "./text_search/models/main_category_model",
         subcategorization_model_dir: str = "./text_search/models/subcategory_models/",
         embeddings_file: str = "./text_search/data/embeddings.pickle",
@@ -78,7 +78,6 @@ class Manage_QA:
         print(colored("Loading Models...\n", color="red", attrs=["bold"]))
         if device is None:
             device = "cuda" if is_available() else "cpu"
-            model_type = "gptq" if device == "cuda" else "gguf"
 
         self.rag = RAG(
             main_categorization_model_dir=main_categorization_model_dir,
@@ -95,8 +94,7 @@ class Manage_QA:
         )
 
         self.finetuned_model = FineTunedModel(
-            model_name=finetuned_model_name,
-            model_type=model_type,
+            repo_id=finetuned_model_name,
             stream=True
         )
 

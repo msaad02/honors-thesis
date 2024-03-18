@@ -1,23 +1,31 @@
 """
-Script that makes class for fine-tuned models
+This script creates a class to interact with fine-tuned models.
 
-These are used for evaluate.py and any other script aiming to run these bots.
-
-Also, this should be pretty modular, so it can be taken and used anywhere
-as long as the packages are installed.
+It is a wrapper for the transformers library, older versions of this
+have support for both CPU and GPU inference, but this version only
+supports GPTQ via GPU. It is possible to make this model support CPU
+by converting it to GGUF format, but I did not have time to do that yet.
 """
 
-from ctransformers import AutoModelForCausalLM
-from typing import Literal, Optional, Sequence
+from transformers import (
+    AutoModelForCausalLM, 
+    AutoTokenizer, 
+    TextIteratorStreamer, 
+    BitsAndBytesConfig, 
+    pipeline
+)
+from typing import Optional
+from threading import Thread
+import torch
 
-# Generate prompt for fine-tuned models. Fine-tuned with this prompt, so it must be used at inference time.
 prompt = lambda question: f"""\
-Below is an inquiry related to SUNY Brockport - from academics, admissions, and faculty support to student life. Prioritize accuracy and brevity.
+<s>[INST] <<SYS>>
+You are a helpful, respectful and honest assistant for SUNY Brockport, a public college in Brockport, New York. Always answer as helpfully as possible, while being safe.  Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.
 
-### Instruction:
-{question}
+If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.
+<</SYS>>
 
-### Response:
+{question} [/INST]
 """
 
 class FineTunedModel():
@@ -26,65 +34,54 @@ class FineTunedModel():
     """
     def __init__(
             self,
-            model_type: Literal['gptq', 'gguf'],
-            model_name: Optional[str] = "msaad02/llama2_7b_brockportgpt",
-            gguf_model_file: Optional[str] = "brockportgpt-7b-q4_1.gguf",
+            repo_id: Optional[str] = "msaad02/BrockportGPT-7b",
             stream: Optional[bool] = False
         ):
         """
-        Initialize the fine-tuned model. Use GPTQ for GPU usage and GGUF for CPU usage.
+        Initialize the fine-tuned model.
 
-        Warning: This will download model if it is not already downloaded.
-
-        If using GGUF, you can optionally specify the model file (quant) to use.
-        See huggingface repo at https://huggingface.co/msaad02/llama2_7b_brockportgpt_gguf
-        for the full list of options. I recommend using default (q4_1.gguf) for CPU usage.
-
-        Set stream to True to print the model's output as it's being generated.
-        stream is only supported for print to console, not for writing to file.
+        Set stream to True to return a generator object instead of a string in __call__()
         """
-        huggingface_id = model_name + "_" + model_type
-
         assert(isinstance(stream, bool))
         self.stream = stream
 
-        if model_type == "gptq":
-            self.model = AutoModelForCausalLM.from_pretrained(
-                model_path_or_repo_id = huggingface_id,
-                model_type = "gptq"
-            )
-        elif model_type == "gguf":
-            self.model = AutoModelForCausalLM.from_pretrained(
-                model_path_or_repo_id = huggingface_id,
-                model_file = gguf_model_file,
-                model_type = "llama"
-            )
-        else:
-            raise ValueError(f"Invalid model type: {model_type}")
-        
+        self.tokenizer=AutoTokenizer.from_pretrained(repo_id, device_map={"": 0})
+        self.model=AutoModelForCausalLM.from_pretrained(
+            pretrained_model_name_or_path=repo_id,
+            quantization_config=BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.bfloat16,
+                bnb_4bit_use_double_quant=True,
+                bnb_4bit_quant_type='nf4'
+            ),    
+            torch_dtype=torch.bfloat16,
+            device_map={"": 0}
+        )
 
+        # For non-streaming generation this is easy.
+        self.pipeline = pipeline(
+            task='text-generation', 
+            model=self.model, 
+            tokenizer=self.tokenizer
+        )
+       
+    
     def _stream_output(self, generator):
-            answer = ""
+            answer: str = ""
             for token in generator:
                 answer += token
                 # print(token, end="", flush=True) # flush=True to print immediately
-                yield answer
+                yield answer.split("[/INST]\n")[1].removesuffix("</s>")
                 
                 
     def __call__(
             self, 
             question: str,
-            max_new_tokens: Optional[int] = None,
-            top_k: Optional[int] = None,
-            top_p: Optional[float] = None,
-            temperature: Optional[float] = None,
-            repetition_penalty: Optional[float] = None,
-            last_n_tokens: Optional[int] = None,
-            seed: Optional[int] = None,
-            batch_size: Optional[int] = None,
-            threads: Optional[int] = None,
-            stop: Optional[Sequence[str]] = None,
-            reset: Optional[bool] = None
+            max_new_tokens: Optional[int] = 512,
+            temperature: Optional[float] = 0.7,
+            top_k: Optional[int] = 40,
+            top_p: Optional[float] = 0.95,
+            repetition_penalty: Optional[float] = 1.1
         ):
         """
         Predict the answer to the question. For FineTunedEngine, this runs locally.
@@ -92,29 +89,26 @@ class FineTunedModel():
         Optional arguments are passed to the model directly from https://github.com/marella/ctransformers
         """
         
+        # Some of these most likely don't work anymore, but it doesn't hurt to have them here.
+        # This was originally configured for `ctransformers`.
         llm_config = {
-            "prompt": prompt(question),
             "max_new_tokens": max_new_tokens,
             "top_k": top_k,
             "top_p": top_p,
             "temperature": temperature,
-            "repetition_penalty": repetition_penalty,
-            "last_n_tokens": last_n_tokens,
-            "seed": seed,
-            "batch_size": batch_size,
-            "threads": threads,
-            "stop": stop,
-            "stream": self.stream,
-            "reset": reset
+            "repetition_penalty": repetition_penalty
         }
         
         if self.stream:
-            return self._stream_output(self.model(**llm_config))
+            inputs = self.tokenizer([prompt(question)], return_tensors="pt")
+            inputs.to(device="cuda")
+            streamer = TextIteratorStreamer(self.tokenizer)
+            generation_kwargs = dict(inputs, streamer=streamer, **llm_config)
+            thread = Thread(target=self.model.generate, kwargs=generation_kwargs)
+            thread.start()
 
-        elif not self.stream:
-            answer = self.model(**llm_config)
-            return answer
+            return self._stream_output(streamer)
+
         else:
-            raise ValueError("Invalid stream value. Must be True or False")
-        
-        # return answer
+            output = self.pipeline(prompt(question), do_sample=True, **llm_config)
+            return output[0]["generated_text"].split("[/INST]\n")[1]
