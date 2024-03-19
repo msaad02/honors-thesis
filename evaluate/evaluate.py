@@ -14,9 +14,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from fine_tuning.finetune_class import FineTunedModel
 from scratch_model.inference import ScratchModel
 from text_search.rag import RAG
-from torch.cuda import is_available
-from termcolor import colored
 from datasets import load_dataset
+from termcolor import colored
 from tqdm import tqdm
 
 # ----- Loading in models/data -----
@@ -25,12 +24,12 @@ models = {
         main_categorization_model_dir="../text_search/models/main_category_model",
         subcategorization_model_dir="../text_search/models/subcategory_models/",
         embeddings_file="../text_search/data/embeddings.pickle"),
-    "Finetuned": FineTunedModel(model_type="gptq" if is_available() else "gguf"),
+    "Finetuned": FineTunedModel(repo_id="msaad02/BrockportGPT-7b"),
     "Scratch": ScratchModel(model_dir="../scratch_model/models/transformer_v7/")
 }
 
 data = load_dataset("msaad02/brockport-gpt-4-qa")['test'].to_pandas()
-data = data.loc[:1, ["question", "answer"]]
+data = data.loc[:, ["question", "answer"]]
 questions = data["question"].to_list()
 
 
@@ -42,7 +41,10 @@ def eval_model(name: str, model, **kwargs) -> list:
 
     responses = []
     for question in tqdm(questions):
-        responses.append(model(question, **kwargs))
+        try:
+            responses.append(model(question, **kwargs))
+        except:
+            responses.append("Error")
 
     return responses
 
@@ -63,4 +65,4 @@ for name, model in models.items():
 
 
 # ----- Saving the results -----
-data.to_csv("answers.csv", index=False)
+data.to_csv("./data/answers.csv", index=False)

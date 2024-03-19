@@ -16,6 +16,9 @@ scratch_model/models
 text_search/models
 text_search/data
 
+# evaluate folder
+evaluate/data
+
 # mac specific
 .DS_Store
 
