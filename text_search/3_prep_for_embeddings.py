@@ -36,9 +36,8 @@ def clean_chunks(chunks):
         chunks[i+1] = chunks[i+1][2:]
     return chunks
 
-chunked_data = pd.Series(raw_chunks.copy()).apply(clean_chunks)
-categorized_data['chunked_data'] = chunked_data
-categorized_data = categorized_data.dropna().reset_index(drop=True)
+categorized_data['chunked_data'] = pd.Series(raw_chunks.copy()).apply(clean_chunks)
+categorized_data = categorized_data.reset_index(drop=True) # .dropna()
 categorized_data = categorized_data.explode('chunked_data').loc[:, ['url', 'category', 'subcategory', 'chunked_data']].reset_index(drop=True)
 
 # Filter to only chunks with less than 80 words and greater than 15 words
@@ -52,7 +51,7 @@ categorized_data = categorized_data[categorized_data['chunked_data'].str.split()
 # categorized_data['chunked_data'].str.split().str.len().hist(bins=30)
 
 try:
-    categorized_data.to_csv("../data_collection/data/chunked_data.csv", index=False)
+    categorized_data.to_csv("../data_collection/data/chunked_data2.csv", index=False)
 except:
     print("Failed to save chunked data to file. Continuing...")
-    categorized_data.to_csv("chunked_data.csv", index=False)
+    categorized_data.to_csv("chunked_data2.csv", index=False)

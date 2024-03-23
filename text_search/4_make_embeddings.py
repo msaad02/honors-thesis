@@ -18,13 +18,14 @@ model = SentenceTransformer('BAAI/bge-large-en-v1.5')
 
 # Load the data - two spots depending on where 3_prep_for_embeddings.py was run. (prefer to run this from /text_search)
 try: 
-    categorized_data = pd.read_csv("../data_collection/data/chunked_data.csv")
+    categorized_data = pd.read_csv("../data_collection/data/chunked_data2.csv")
 except:
-    categorized_data = pd.read_csv("chunked_data.csv")
+    categorized_data = pd.read_csv("chunked_data2.csv")
 
-# Remove url category and rename
+# Remove url category, rename, and drop duplicates
 categorized_data = categorized_data.loc[:, ['category', 'subcategory', 'chunked_data']]
 df = categorized_data.rename(columns={'chunked_data': 'data'})
+df = df.drop_duplicates(subset=['data']).reset_index(drop=True)
 
 # Line of code from `train_subcat_classifier.py`
 categories_with_subcategories = df['category'].unique()[df.groupby(["category"])['subcategory'].nunique() > 4]

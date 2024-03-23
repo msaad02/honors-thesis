@@ -164,7 +164,7 @@ for category in categories_to_model:
 
     # Early stopping parameters
     early_stopping_patience = 10
-    min_delta = 0.001  # Minimum change to qualify as an improvement
+    min_delta = 0.01  # Minimum change to qualify as an improvement
     best_loss = float('inf')
     best_model = None
     no_improvement_count = 0

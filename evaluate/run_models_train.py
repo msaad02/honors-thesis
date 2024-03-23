@@ -1,8 +1,12 @@
 """
-This script is pretty simple. We are taking in the test data that we
+This script is pretty simple. We are taking in the TRAIN data that we
 split in the `data_collection/5_upload_datasets.py` script and then
 evaluating it on all the models that we have created in this project.
+
+These results will be saved and then evaluated by GPT-4 in evaluate.py
 """
+
+# NOTE: This about for TRAINING DATA
 
 import sys
 import os
@@ -28,7 +32,8 @@ models = {
     "Scratch": ScratchModel(model_dir="../scratch_model/models/transformer_v7/")
 }
 
-data = load_dataset("msaad02/brockport-gpt-4-qa")['test'].to_pandas()
+data = load_dataset("msaad02/brockport-gpt-4-qa")['train'].to_pandas()
+data = data.sample(n=1500) # Added for train data
 data = data.loc[:, ["question", "answer"]]
 questions = data["question"].to_list()
 
@@ -65,4 +70,4 @@ for name, model in models.items():
 
 
 # ----- Saving the results -----
-data.to_csv("./data/answers.csv", index=False)
+data.to_csv("./data/train_answers.csv", index=False)
