@@ -1,0 +1,7 @@
+# Evaluations
+
+Evaluations are inherently difficult to do in projects with advanced NLP techniques. This is because the evaluation of NLP models is often subjective and requires human judgment. To try and evaluate the results of this project we are going to attempt automatic evaluation using GPT-4 as an evaluator. Essentially, the idea is to put the models head to head for identical questions and see which one performs better. This is not a perfect evaluation. However, it is a good way to get a rough idea of how well the models are performing.
+
+## Evaluation Methodology
+
+There are two parts to evaluation in this project. The first part of the evaluation is to test the models on the TESTING data, which none of the models have seen any part of throughout their creation. The second part of the evaluation is to test the models on the TRAINING data with slight modification. We are using GPT-3.5 to modify the questions to have the same substance, but be written in a different way. This is to ensure that the models are not just memorizing the questions and answers, but actually understanding the content. Arguably, this second metric is more important than the first, but both will give insight into the performance of the models.

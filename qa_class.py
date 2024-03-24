@@ -64,7 +64,7 @@ class Manage_QA:
         self,
         finetuned_model_name: str = "msaad02/BrockportGPT-7b",
         scratch_model_dir: str = "./scratch_model/models/transformer_v7/",
-        main_categorization_model_dir: str = "./text_search/models/main_category_model",
+        main_categorization_model_dir: str = "./text_search/models/main_category",
         subcategorization_model_dir: str = "./text_search/models/subcategory_models/",
         embeddings_file: str = "./text_search/data/embeddings.pickle",
         typesense_host: str = "localhost",

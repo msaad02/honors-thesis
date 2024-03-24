@@ -113,7 +113,7 @@ class QuestionClassifier:
     """
     def __init__(
         self, 
-        main_categorization_model_dir='./models/main_category_model/', 
+        main_categorization_model_dir='./models/main_category/', 
         subcategorization_model_dir='./models/subcategory_models/'
     ):
         # ---- Attempt to initialize models ----
