@@ -1,12 +1,14 @@
 """
 This script creates the data for RAG evaluation.
+
+NOTE: This relies on the `evaluate/1_eval_create.py` script to be run first.
 """
 
 import pandas as pd
 from itertools import product
+import random
 
 qas = pd.read_csv("../data/evaluation_data.csv")
-
 
 # Configuration options
 choices = {
@@ -24,11 +26,21 @@ df = pd.DataFrame(all_combinations, columns=choices.keys())
 df["model_kwargs"] = df.apply(lambda x: {"temperature": x["temperature"]}, axis=1)
 df = df.drop(columns=["temperature"])
 df = pd.DataFrame({"player": [{**row[1]} for row in df.iterrows()]})
+
+
+qas = qas.groupby("type").sample(n=600)
+qas = qas.sample(frac=1).reset_index(drop=True)
+
 df = df.sample(n=len(qas), replace=True).reset_index(drop=True)
+df = df.rename({"player": "player_A_config"}, axis=1)
+df['player_A_config'] = df['player_A_config'].apply(str)
 
-# Now we have a length ~2300 of configurations, we want to combine it with the questions
-out = pd.concat([qas, df], axis=1)
+def pick_opponent(player: str):
+    players = set(df['player_A_config'])
+    players.remove(player)
+    return random.choice(list(players))
+    
+df['player_B_config'] = df['player_A_config'].apply(pick_opponent)
 
-out.to_csv("../data/rag_evaluation_data.csv", index=False)
-
-
+df_out = pd.concat([qas, df], axis=1)
+df_out.to_csv("../data/rag_evaluation_data.csv", index=False)
