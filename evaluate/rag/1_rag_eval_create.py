@@ -27,9 +27,8 @@ df["model_kwargs"] = df.apply(lambda x: {"temperature": x["temperature"]}, axis=
 df = df.drop(columns=["temperature"])
 df = pd.DataFrame({"player": [{**row[1]} for row in df.iterrows()]})
 
-
-qas = qas.groupby("type").sample(n=600)
-qas = qas.sample(frac=1).reset_index(drop=True)
+# qas = qas.groupby("type").sample(n=len(qas))
+# qas = qas.sample(frac=1).reset_index(drop=True)
 
 df = df.sample(n=len(qas), replace=True).reset_index(drop=True)
 df = df.rename({"player": "player_A_config"}, axis=1)
