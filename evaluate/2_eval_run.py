@@ -1,12 +1,11 @@
 """
-This script is pretty simple. We are taking in the test data that we
-split in the `data_collection/5_upload_datasets.py` script and then
-evaluating it on all the models that we have created in this project.
+This script is pretty simple. We are taking in the evaluation data that we
+created in the `1_eval_create.py` script and then evaluating it on each of
+the models that we have created in this project, that is, the scratch model,
+finetuned model, and retrieval augmented generation (RAG).
 
-These results will be saved and then evaluated by GPT-4 in evaluate.py
+These results will be saved and then evaluated by GPT-4 later.
 """
-
-# NOTE: THIS IS FOR TESTING DATA
 
 import sys
 import os
@@ -32,8 +31,7 @@ models = {
     "Scratch": ScratchModel(model_dir="../scratch_model/models/transformer_v7/")
 }
 
-data = pd.read_csv('./data/evaluation_data.csv').sample(n=2)
-# data = data.loc[:, ["question", "answer"]]
+data = pd.read_csv('./data/evaluation_data.csv')
 questions = data["question"].to_list()
 
 
