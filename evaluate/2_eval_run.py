@@ -31,7 +31,7 @@ models = {
     "Scratch": ScratchModel(model_dir="../scratch_model/models/transformer_v7/")
 }
 
-data = pd.read_csv('./data/evaluation_data.csv')
+data = pd.read_csv('./data/evaluation_data.csv').sample(n=10)
 questions = data["question"].to_list()
 
 
