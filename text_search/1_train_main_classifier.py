@@ -1,46 +1,28 @@
 """
-This script trains a question classifier model using a dataset of categorized questions. It uses a CountVectorizer to convert the text data into numerical features and a neural network model for classification. The trained model is saved along with other necessary files for inference.
+This script trains a subcategory classifier for the main classifier.
 
-Keep in mind that this data is *heavily* unbalanced. To account for this, we are oversampling the data. As opposed to weighting the loss function, this method performs better, but regardless is not ideal.
+Not much useful is printed out to the console, but the results of the model evaluation are written to a file
+in the category directory. The model, vectorizer, class mappings, and hyperparameters are also saved to the
+category directory. This uses the same directory structure as the category classifier, so we can use the same
+inference script to load the model and make predictions.
 
-The output of this file is a directory called "model" that contains the following files:
-- category_classifier_model.pth: the trained model
-- vectorizer.joblib: the CountVectorizer used to convert text to numerical features
-- class_mappings.json: a dictionary mapping class names to integers and vice versa
-- hyperparameters.json: a dictionary containing the hyperparameters used to train the model
-
-The model can be used for inference by using the `QuestionClassifier` class from question_classifier.py
-
-NOTE: There is a data leakage issue in this script so the accuracy numbers are inflated if training on partial data. 
+See `category_classifier.py` for inference module.
 """
 
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from torch.utils.data import TensorDataset, DataLoader
 from datasets import load_dataset
+import matplotlib.pyplot as plt
+from copy import deepcopy
 import torch.nn as nn
 import pandas as pd
+import numpy as np
+import shutil
 import torch
 import joblib
 import json
 import os
-
-# All useful parameters are here:
-SAMPLE_SIZE = 2000
-BATCH_SIZE = 64
-EPOCHS = 25
-LEARNING_RATE = 0.0001
-HIDDEN_DIM = 256
-DROPOUT = 0.5
-SAVE_DIR = "model/"
-
-# proportion of data to use for training/validation/testing.
-# This is set to 0.8/0.1/0.1 for creating the final model
-train_proportion = 0.8
-validation_prop = 0.1
-
-# check SAVE_DIR exists
-if not os.path.exists(SAVE_DIR):
-    os.makedirs(SAVE_DIR)
 
 # Set default device based on whether CUDA is available
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -54,31 +36,100 @@ qa_df = pd.concat([
 ])
 
 df = pd.merge(qa_df, category_df[["url", "category", "subcategory"]], on="url", how="left")
+df = df.dropna(subset=['category'])
 
-train_df = df.groupby("category").sample(n=SAMPLE_SIZE, replace=True)
-train_df = train_df.sample(frac=1).reset_index(drop=True)
 
+# Working on training
+category = "main_category"
+BATCH_SIZE = 32
+MAX_EPOCHS = 200 # This uses early stopping so it won't reach this number of epochs
+LEARNING_RATE = 0.0001
+HIDDEN_DIM = 32
+DROPOUT = 0.5
+BASE_SAVE_DIR = "models/"
+
+# proportion of data to use for training/validation/testing.
+train_proportion = 0.8
+validation_prop = 0.15
+
+# ------------------------------------------------------------------------------------------------------
+# Creating the directory structure for the model
+
+# check SAVE_DIR exists
+if not os.path.exists(BASE_SAVE_DIR):
+    os.makedirs(BASE_SAVE_DIR)
+
+
+# Define the directory path for the category
+category_dir = os.path.join(BASE_SAVE_DIR, category)
+old_dir = os.path.join(category_dir, "old")
+
+# If the directory already exists and it has files in it, handle the old directory
+if os.path.exists(category_dir) and os.listdir(category_dir):  # Check if the directory exists and is not empty
+    
+    # Remove the old directory if it exists
+    if os.path.exists(old_dir):
+        shutil.rmtree(old_dir)
+    
+    # Create a new "old" directory
+    os.makedirs(old_dir)
+    
+    # Move each file in the current category directory to the "old" directory
+    for filename in os.listdir(category_dir):
+        file_path = os.path.join(category_dir, filename)
+        if os.path.isfile(file_path):  # Make sure it's a file, not a directory
+            shutil.move(file_path, old_dir)
+
+# If the category directory doesn't exist, create it
+elif not os.path.exists(category_dir):
+    os.makedirs(category_dir)
+
+SAVE_DIR = category_dir + "/"
+
+
+# ------------------------------------------------------------------------------------------------------
+# Create the training data
+
+train_df = df.sample(frac=1).reset_index(drop=True) # Shuffle the data
+
+# Vectorizing the data
 vectorizer = CountVectorizer(lowercase=True, min_df=5)
-
-train_vect = vectorizer.fit_transform(train_df['question'])
+vectorizer.fit(train_df['question'])
 
 text_to_int = {text: idx for idx, text in enumerate(train_df['category'].unique())}
 int_to_text = {idx: text for text, idx in text_to_int.items()}
-
 train_df['category_vect'] = train_df['category'].apply(lambda x: text_to_int[x])
 
-train_size = int(train_proportion * train_vect.shape[0])
-validation_size = int(validation_prop * train_vect.shape[0])
+# Find the average number of questions per subcategory
+avg_qa_count = train_df['category'].value_counts().values.mean()
+
+# This is the number of samples we will take from each subcategory. We will oversample the data to balance the classes
+SAMPLE_SIZE = int(avg_qa_count)*3
+print("Average number of questions per subcategory:", avg_qa_count, " - Sample size:", SAMPLE_SIZE)
+
+# But first, we need to take out the training and validation data so that we don't cause data leakage
+train_size = int(train_proportion * len(train_df))
+validation_size = int(validation_prop * len(train_df))
 end_validation_size = train_size + validation_size
 
-X_train = torch.tensor(train_vect[:train_size].toarray(), dtype=torch.float)
-y_train = torch.tensor(train_df['category_vect'][:train_size].to_numpy(), dtype=torch.long)
-X_val = torch.tensor(train_vect[train_size:end_validation_size].toarray(), dtype=torch.float)
-y_val = torch.tensor(train_df['category_vect'][train_size:end_validation_size].to_numpy(), dtype=torch.long)
-X_test = torch.tensor(train_vect[end_validation_size:].toarray(), dtype=torch.float)
-y_test = torch.tensor(train_df['category_vect'][end_validation_size:].to_numpy(), dtype=torch.long)
+Xy_train_df = train_df[:train_size]
+Xy_val_df = train_df[train_size:end_validation_size]
+Xy_test_df = train_df[end_validation_size:]
 
-# Create DataLoaders for training and validation
+# Oversample the training data only (not the validation and test sets)
+oversampled_train_df = Xy_train_df.groupby("category").sample(n=SAMPLE_SIZE, replace=True)
+
+# Now create the tensors using the oversampled training data
+X_train = torch.tensor(vectorizer.transform(oversampled_train_df['question']).toarray(), dtype=torch.float)
+y_train = torch.tensor(oversampled_train_df['category_vect'].to_numpy(), dtype=torch.long)
+
+# The validation and test sets should not be oversampled and remain as they are
+X_val = torch.tensor(vectorizer.transform(Xy_val_df['question']).toarray(), dtype=torch.float)
+y_val = torch.tensor(Xy_val_df['category_vect'].to_numpy(), dtype=torch.long)
+X_test = torch.tensor(vectorizer.transform(Xy_test_df['question']).toarray(), dtype=torch.float)
+y_test = torch.tensor(Xy_test_df['category_vect'].to_numpy(), dtype=torch.long)
+
+# Create DataLoaders for training and validation using the oversampled training data
 train_loader = DataLoader(dataset=TensorDataset(X_train, y_train), batch_size=BATCH_SIZE, shuffle=True)
 val_loader = DataLoader(dataset=TensorDataset(X_val, y_val), batch_size=BATCH_SIZE, shuffle=False)
 
@@ -99,7 +150,7 @@ class CategoryClassifier(nn.Module):
         return x
 
 # Instantiate the model
-vocab_size = train_vect.shape[1]
+vocab_size = X_train.shape[1]
 hidden_dim = HIDDEN_DIM
 output_dim = len(text_to_int)
 dropout = DROPOUT
@@ -111,10 +162,18 @@ criterion = nn.CrossEntropyLoss()
 # Move model to device
 model = model.to(device)
 
+# Early stopping parameters
+early_stopping_patience = 10
+min_delta = 0.01  # Minimum change to qualify as an improvement
+best_loss = float('inf')
+best_model = None
+best_epoch = 0
+no_improvement_count = 0
+
 # Training loop
 train_losses = []
 val_losses = []
-for epoch in range(EPOCHS):
+for epoch in range(MAX_EPOCHS):
     train_loss = 0.0
     val_loss = 0.0
     model.train()
@@ -128,20 +187,37 @@ for epoch in range(EPOCHS):
         optimizer.step()
         train_loss += loss.item() * data.size(0)
     model.eval()
-    for batch_idx, (data, target) in enumerate(val_loader):
-        data = data.to(device)
-        target = target.to(device)
-        output = model(data)
-        loss = criterion(output, target)
-        val_loss += loss.item() * data.size(0)
+    with torch.no_grad():  # No need to track gradients during evaluation
+        for batch_idx, (data, target) in enumerate(val_loader):
+            data = data.to(device)
+            target = target.to(device)
+            output = model(data)
+            loss = criterion(output, target)
+            val_loss += loss.item() * data.size(0)
     train_loss = train_loss / len(train_loader.dataset)
     val_loss = val_loss / len(val_loader.dataset)
     train_losses.append(train_loss)
     val_losses.append(val_loss)
-    print('Epoch: {} \tTraining Loss: {:.6f} \tValidation Loss: {:.6f}'.format(epoch, train_loss, val_loss))
 
-import numpy as np
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+    # Print progress
+    print(f'Epoch: {epoch+1} \tTraining Loss: {train_loss:.6f} \tValidation Loss: {val_loss:.6f}')
+
+    # Check for early stopping
+    if val_loss + min_delta < best_loss:
+        best_loss = val_loss
+        best_model = deepcopy(model.state_dict())  # Save a copy of the best model
+        best_epoch = epoch
+        no_improvement_count = 0
+    else:
+        no_improvement_count += 1
+    
+    if no_improvement_count >= early_stopping_patience:
+        print(f'Early stopping triggered after {epoch+1} epochs.')
+        break
+
+# Restore the best model state
+if best_model is not None:
+    model.load_state_dict(best_model)
 
 # File to write the output
 output_file = f'{SAVE_DIR}model_evaluation.txt'
@@ -164,7 +240,6 @@ classification_rep = classification_report(y_test.cpu(), predicted.cpu())
 # Write the results to the file
 with open(output_file, 'w') as f:
     f.write("Model Evaluation Results on Test Data:\n\n")
-    f.write("Keep in mind that data leakage may have occurred during training due to oversampling.\n\n")
     f.write(f"Accuracy: {accuracy * 100:.2f}%\n")
     f.write("Confusion Matrix:\n")
     f.write(np.array2string(confusion_mat, separator=', ') + "\n\n")
@@ -172,6 +247,17 @@ with open(output_file, 'w') as f:
     f.write(classification_rep + "\n")
 
 print(f"Model evaluation results written to {output_file}")
+
+# Plot the training and validation losses
+plt.plot(np.array(train_losses), label='Training Loss')
+plt.plot(np.array(val_losses), label='Validation Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.title('Training and Validation Loss')
+plt.legend()
+plt.savefig(f'{SAVE_DIR}loss_plot.png')
+plt.show()
+plt.close()
 
 # Save the model
 torch.save(model.state_dict(), f'{SAVE_DIR}category_classifier_model.pth')
@@ -186,6 +272,16 @@ with open(f'{SAVE_DIR}class_mappings.json', 'w') as f:
 # save hyperparameters
 # Note that these are not all the hyperparameters, just the ones that are needed for inference
 with open(f'{SAVE_DIR}hyperparameters.json', 'w') as f:
-    json.dump({'vocab_size': vocab_size, 'hidden_dim': hidden_dim, 'output_dim': output_dim, 'dropout': dropout}, f)
+    parameters = {
+        'vocab_size': vocab_size,
+        'hidden_dim': hidden_dim,
+        'output_dim': output_dim,
+        'dropout': dropout,
+        'learning_rate': LEARNING_RATE,
+        'batch_size': BATCH_SIZE,
+        'epochs': best_epoch,
+        'sample_size': SAMPLE_SIZE
+    }
+    json.dump(parameters, f)
 
 print(f"Model saved to {SAVE_DIR} directory")

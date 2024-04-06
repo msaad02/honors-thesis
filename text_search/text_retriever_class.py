@@ -78,7 +78,7 @@ class TypesenseRetriever:
         self.client = docker.from_env()
         self.start_docker_container()
 
-        self.client = typesense.Client(
+        self.typesense_client = typesense.Client(
             {
                 "nodes": [
                     {
@@ -115,46 +115,38 @@ class TypesenseRetriever:
         just manually setup your typesense server via docker and set the parameters in the 
         `__init__` function to the correct values.
         """
-        start = True
         try:
-            container = self.client.containers.get(TYPESENSE_CONTAINER_NAME)
-            if container.status == "running":
-                print("Docker container is already running...")
-                start = False
-
-        except docker.errors.NotFound:
-            print("Docker container not found...")
-
-        if start:
-            print("Docker container is not running. Starting it now...")
-            command = (
-                f"docker run --name {TYPESENSE_CONTAINER_NAME} -p 8108:8108 "
-                "-v /home/msaad/typesense-data:/data "
-                "typesense/typesense:0.25.2 "
-                "--data-dir /data "
-                "--api-key=xyz "
-                "--enable-cors"
+            self.container = self.client.containers.run(
+                image="typesense/typesense:0.25.2",
+                name=TYPESENSE_CONTAINER_NAME,
+                ports={'8108/tcp': 8108},
+                volumes={'/home/msaad/typesense-data': {'bind': '/data', 'mode': 'rw'}},
+                command="--data-dir /data --api-key=xyz --enable-cors",
+                detach=True
             )
-            subprocess.Popen(
-                command,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                shell=True,
-            )
-            print("Docker container started.\n")
+            print("Typesense container started.\n")
+        except docker.errors.APIError:
+            print("Typesense container (presumably) exists already.")
+
+            self.container = self.client.containers.get(TYPESENSE_CONTAINER_NAME)
+
+            if self.container.status != "running":
+                self.container.start()
+                print("Typesense container started.\n")
+            else:
+                print("Typesense container is already running...")
+
+        except Exception as e:
+            print(f"Error starting Typesense container: \n\n{e}")
 
 
     def stop_docker_container(self):
         "Stops the typesense docker container if it is running."
         try:
-            container = self.client.containers.get(TYPESENSE_CONTAINER_NAME)
-            container.stop()
-            container.remove()
-            # Helpful to see. But just refuses to print before "Abort". It just keeps
-            # writing on top of my command line which is annoying.
-            # print(f"\nContainer '{TYPESENSE_CONTAINER_NAME}' has been stopped.\n")
+            self.container.stop()
+            self.container.remove()
         except:
-            print(f"There was an error shutting down '{TYPESENSE_CONTAINER_NAME}', please manually remove.")
+            print(f"There was an error shutting down the typesense container, please manually remove.")
 
 
     def _search(self, question, alpha=0.8, use_classifier=True):
@@ -197,7 +189,7 @@ class TypesenseRetriever:
 
             query = {"q": question}
 
-        response = self.client.multi_search.perform(
+        response = self.typesense_client.multi_search.perform(
             search_queries={"searches": [query]},
             common_params={
                 "collection": self.collection_name,
