@@ -42,7 +42,7 @@ df.dropna(inplace=True)
 
 # Finding the categories with more than 4 subcategories
 # These are the categories we will train on, the rest won't benefit from this
-categories_to_model = df['category'].unique()[df.groupby(["category"])['subcategory'].nunique() > 4]
+categories_to_model = df.groupby(["category"])['subcategory'].nunique().sort_values(ascending=False).head(4).index.to_numpy()
 
 # Working on training
 BATCH_SIZE = 32
@@ -50,7 +50,7 @@ MAX_EPOCHS = 200 # This uses early stopping, so the model may not train for this
 LEARNING_RATE = 0.0001
 HIDDEN_DIM = 256
 DROPOUT = 0.5
-BASE_SAVE_DIR = "subcat_models/"
+BASE_SAVE_DIR = "./models/subcategory_models/"
 
 # proportion of data to use for training/validation/testing.
 train_proportion = 0.7
@@ -166,6 +166,7 @@ for category in categories_to_model:
     early_stopping_patience = 10
     min_delta = 0.01  # Minimum change to qualify as an improvement
     best_loss = float('inf')
+    best_epoch = 0
     best_model = None
     no_improvement_count = 0
 
@@ -205,6 +206,7 @@ for category in categories_to_model:
         if val_loss + min_delta < best_loss:
             best_loss = val_loss
             best_model = deepcopy(model.state_dict())  # Save a copy of the best model
+            best_epoch = epoch
             no_improvement_count = 0
         else:
             no_improvement_count += 1
@@ -257,6 +259,10 @@ for category in categories_to_model:
     plt.show()
     plt.close()
 
+    # Export the loss and validation loss per epoch to a json file
+    with open(os.path.join(SAVE_DIR, "loss.json"), "w") as f:
+        f.write(json.dumps({'loss': train_losses, 'val_loss': val_losses}))
+
     # Save the model
     torch.save(model.state_dict(), f'{SAVE_DIR}category_classifier_model.pth')
 
@@ -277,7 +283,7 @@ for category in categories_to_model:
             'dropout': dropout,
             'learning_rate': LEARNING_RATE,
             'batch_size': BATCH_SIZE,
-            'epochs': MAX_EPOCHS,
+            'epochs': best_epoch,
             'sample_size': SAMPLE_SIZE
         }
         json.dump(parameters, f)

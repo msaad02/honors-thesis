@@ -259,6 +259,10 @@ plt.savefig(f'{SAVE_DIR}loss_plot.png')
 plt.show()
 plt.close()
 
+# Export the loss and validation loss per epoch to a json file
+with open(os.path.join(SAVE_DIR, "loss.json"), "w") as f:
+    f.write(json.dumps({'loss': train_losses, 'val_loss': val_losses}))
+
 # Save the model
 torch.save(model.state_dict(), f'{SAVE_DIR}category_classifier_model.pth')
 
