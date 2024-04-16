@@ -67,7 +67,7 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
 
     # Launch the Gradio UI.
-    demo.launch(show_api=False, inbrowser=True)
+    demo.launch(show_api=False, inbrowser=True, share=True)
 
 
 if __name__ == "__main__":

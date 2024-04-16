@@ -31,7 +31,7 @@ models = {
     "Scratch": ScratchModel(model_dir="../scratch_model/models/transformer_v7/")
 }
 
-data = pd.read_csv('./data/evaluation_data.csv').sample(n=10)
+data = pd.read_csv('./data/evaluation_data.csv')
 questions = data["question"].to_list()
 
 
@@ -58,7 +58,7 @@ for name, model in models.items():
     if name == "RAG":
         args['config'] = {
             "search_type": "typesense",
-            "use_classifier": False,
+            "use_classifier": True,
             "n_results": 5,
             "model_kwargs": {"temperature": 0.0},
         }

@@ -28,3 +28,5 @@ tensorflow_datasets
 
 docker
 gradio
+statsmodels
+torchtext

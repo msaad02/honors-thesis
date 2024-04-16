@@ -27,3 +27,6 @@ __pycache__
 model
 embeddings.pickle
 .vscode
+
+*.csv
+*.txt

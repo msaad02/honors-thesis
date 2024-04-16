@@ -27,7 +27,7 @@ class RAG:
     "Wrapper class for RAG retrievers and answerers using `__call__` method."
     def __init__(
         self,
-        main_categorization_model_dir: str = "./models/main_category_model",
+        main_categorization_model_dir: str = "./models/main_category",
         subcategorization_model_dir: str = "./models/subcategory_models/",
         embeddings_file: str = "./data/embeddings.pickle",
         typesense_host: str = "localhost",
