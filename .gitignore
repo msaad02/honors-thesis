@@ -1,7 +1,7 @@
 # chatgpt_pe folder
 
 # data_collection folder
-data_collection/data/*
+data_collection/data
 
 # fine_tuning folder
 fine_tuning/models
