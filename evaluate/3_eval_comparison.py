@@ -1,100 +1,92 @@
 """
 This script is all about evaluating the models. We previously ran the models
-on the test dataset in `./run_models.py` and now we are going to put the models
+on the eval dataset in `./eval_run.py` and now we are going to put the models
 in a head-to-head competition to see which one is the best. The evaluation is 
 scored by GPT-4, who will be the judge of the best response to a question.
 
 Using these results, we can create some leaderboard of what the best model is.
 """
 
-from openai import OpenAI
-from tqdm import tqdm
+import asyncio
+from parallel_gpt import ParallelGPT
 import pandas as pd
-import random
+import tiktoken
 
-client = OpenAI()
+# Select either GPT-3.5 or GPT-4
+parallel_gpt = ParallelGPT(gpt=4)
 
-# Dataset
-df = pd.read_csv("./data/test_answers.csv")
+df_rag = pd.read_csv("data/overall_rag_evaluation_answers.csv")
+df_ft = pd.read_csv("data/overall_finetuned_evaluation_answers.csv")
+df_scr = pd.read_csv("data/overall_scratch_evaluation_answers.csv")
 
-# Splitting the data into their various combinations
-rag_v_scratch = df.loc[:, ['question', 'answer', 'RAG', 'Scratch']]
-rag_v_ft = df.loc[:, ['question', 'answer', 'RAG', 'Finetuned']]
-scratch_v_ft = df.loc[:, ['question', 'answer', 'Scratch', 'Finetuned']]
+df_rag['type'] = "RAG"
+df_ft['type'] = "Finetuned"
+df_scr['type'] = "Scratch"
 
-# Combining the data
-dfs = [rag_v_scratch, rag_v_ft, scratch_v_ft]
-result = pd.concat(dfs, ignore_index=True)
+df_rag = df_rag.drop_duplicates(subset="question").reset_index(drop=True)
+df_ft = df_ft.drop_duplicates(subset="question").reset_index(drop=True)
+df_scr = df_scr.drop_duplicates(subset="question").reset_index(drop=True)
 
-output = []
+def make_matchups(df1, df2):
+    """Creates a head-to-head matchup dataframe between two dataframes."""
+    assert len(df1) == len(df2), "Dataframes must have the same length."
 
-# Randomly select which model is player A and which is player B
-for row in result.iterrows():
-    row = row[1][~row[1].isna()]
+    df_len = len(df1)
 
-    idx_a = random.choice([0, 1])
-    idx_b = 1 - idx_a
+    df1_1, df1_2 = df1.iloc[:df_len//2], df1.iloc[df_len//2:]
+    df2_1, df2_2 = df2.iloc[:df_len//2], df2.iloc[df_len//2:]
 
-    output.append({
-        'question': row['question'],
-        'answer': row['answer'],
-        'player_a': row[idx_a+2],
-        'player_b': row[idx_b+2],
-        'whois_player_a': row.index[idx_a+2],
-        'whois_player_b': row.index[idx_b+2]
-    })
+    df_1 = pd.merge(df1_1, df2_1, on="question", suffixes=["_A", "_B"])
+    df_2 = pd.merge(df2_2, df1_2, on="question", suffixes=["_A", "_B"])
 
-# Shuffle the data
-df = pd.DataFrame(output).sample(frac=1).reset_index(drop=True)
+    df = pd.concat([df_1, df_2])
+    return df
 
-# Create the prompt
-prompt = lambda a,b,c,d: f"Question: {a}\nGround Truth: {b}\nPlayer A: {c}\nPlayer B: {d}"
+df_rag_ft = make_matchups(df_rag, df_ft)
+df_rag_scr = make_matchups(df_rag, df_scr)
+df_ft_scr = make_matchups(df_ft, df_scr)
 
-# Create the prompt for each row
-df['prompt'] = df.apply(lambda x: prompt(x['question'], x['answer'], x['player_a'], x['player_b']), axis=1)
+df = pd.concat([df_rag_ft, df_rag_scr, df_ft_scr])
 
+df_eval = pd.read_csv("data/evaluation_data.csv")
+df_eval.rename({"answer": "true_answer", "type": "question_type"}, axis=1, inplace=True)
 
-# Create a function to assess the players
-prompt_tokens = 0
-completion_tokens = 0
+df_eval = df_eval.drop_duplicates(subset="question").reset_index(drop=True)
 
-def assess_players(prompt):
-    "GPT-4 evaluates best model. Returns A, B, or None to indicate best response."
-    global prompt_tokens, completion_tokens
+df = pd.merge(df, df_eval, on="question", how="left")
 
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4-turbo-preview",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a helpful referee, who helps pick the best response to a question. The question is about SUNY Brockport, a school in upstate NY. You are given the following:\n\n1) The question given.\n2) The ground truth in the form of an answer to the question.\n3) Player A response to the question.\n4) Player B response to the question.\n\nGiven the question and ground truth, select which player has the best response. Respond with either \"A\", or \"B\" only. In some cases, it may be possible that both players are incorrect. In those cases, respond with \"None\". In choosing the best response prioritize correctness first, then enthusiasm and overall coherence after. Remember to only respond with either \"A\", \"B\", or \"None\". Do not explain your decision."
-                }, {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            temperature=0,
-            max_tokens=1
-        )
-    except:
-        return "Error"
+message = lambda a, b, c, d: [
+    {"role": "system", "content": """You are a helpful referee who helps pick the best response to a question. The question is about SUNY Brockport, a school in upstate NY. You are given the following:\n\n1) The question given.\n2) The ground truth in the form of an answer to the question.\n3) Player A response to the question.\n4) Player B response to the question.\n\nGiven the question and ground truth, select which player has the best response. Respond with either \"A\", or \"B\" only. In some cases, it may be possible that both players are incorrect. In those cases, respond with \"None\". In choosing the best response prioritize correctness first, then enthusiasm and overall coherence after. Remember to only respond with either \"A\", \"B\", or \"None\". Do not explain your decision."""},
+    {"role": "user", "content": f"Question: {a}\nGround Truth: {b}\nPlayer A: {c}\nPlayer B: {d}"}
+]
 
-    prompt_tokens += response.usage.prompt_tokens
-    completion_tokens += response.usage.completion_tokens
+df['prompt'] = df.apply(lambda x: message(x['question'], x['true_answer'], x['answer_A'], x['answer_B']), axis=1)
+# df = df[['question', 'prompt', 'question_type', 'type_A', 'type_B']]
 
-    return response.choices[0].message.content
+encoding = tiktoken.get_encoding("cl100k_base")
+encoding = tiktoken.encoding_for_model("gpt-4")
+
+def num_tokens_from_string(string: str, encoding) -> int:
+    """Returns the number of tokens in a text string."""
+    num_tokens = len(encoding.encode(string))
+    return num_tokens
+
+prompt_inputs = [" ".join([d['content'] for d in df['prompt'][i]]) for i in range(len(df))]
+prompt_tokens = [num_tokens_from_string(prompt, encoding) for prompt in prompt_inputs]
+
+expected_cost = (sum(prompt_tokens) / 1_000_000) * 10 + (len(df) / 1_000_000) * 30
+print(f"Expected cost: ${expected_cost:.2f}")
 
 
-# Assess the players
-for prompt in tqdm(df.loc[:, 'prompt']):
-    df.loc[df['prompt'] == prompt, 'best_response'] = assess_players(prompt)
+df['best_response'] = asyncio.run(parallel_gpt.parallel_gpt(
+    data=df['prompt'],
+    model_params={
+        'temperature': 0,
+        'max_tokens': 1
+    }
+))
 
-# Save the results
-df.to_csv("data/test_evaluation.csv", index=False)
 
-# Print the results
-print("Done! Results saved to data/test_evaluation.csv.")
+df.to_csv("data/overall_evaluation.csv", index=False)
 
-print(f"Prompt tokens used: {prompt_tokens}")
-print(f"Completion tokens used: {completion_tokens}")
+print("Evaluation complete! Results saved to data/overall_evaluation.csv")

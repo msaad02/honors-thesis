@@ -28,14 +28,14 @@ class ParallelGPT():
 
         if self.gpt == 3:
             self.model = "gpt-3.5-turbo"
-            self.prompt_cost = 0.001                     # Price per 1000 prompt tokens for GPT-3.5-turbo-1106 as of 12/22/2023
-            self.completion_cost = 0.002                 # Price per 1000 completion tokens for GPT-3.5-turbo-1106 as of 12/22/2023
-            self.n_concurrent = 14                       # My limit is 160_000 token/min, so 14 concurrent requests works well
+            self.prompt_cost = 0.50                       # Price per 1_000_000 prompt tokens for GPT-3.5-turbo-1106 as of 4/21/2024
+            self.completion_cost = 1.50                   # Price per 1_000_000 completion tokens for GPT-3.5-turbo-1106 as of 4/21/2024
+            self.n_concurrent = 10                        # 10 concurrent requests works well to not hit the token limits
         elif self.gpt == 4:
-            self.model = "gpt-4-turbo-preview"
-            self.prompt_cost = 0.01                      # Price per 1000 prompt tokens for GPT-4-1106-preview as of 12/22/2023
-            self.completion_cost = 0.03                  # Price per 1000 completion tokens for GPT-4-1106-preview as of 12/22/2023
-            self.n_concurrent = 20                       # My limit is 300_000 token/min limit, so 20 concurrent requests works well
+            self.model = "gpt-4-turbo"
+            self.prompt_cost = 10                        # Price per 1_000_000 prompt tokens for GPT-4-turbo as of 4/21/2024
+            self.completion_cost = 30                    # Price per 1_000_000 completion tokens for GPT-4-turbo as of 4/21/2024
+            self.n_concurrent = 10                       # 10 concurrent requests works well to not hit the token limits
         else:
             raise ValueError("GPT must be 3 or 4")
         
@@ -137,7 +137,7 @@ class ParallelGPT():
             total_prompt_tokens = sum([json.loads(api_res)['usage']['prompt_tokens'] for api_res in not_null_api_responses])
             total_completion_tokens = sum([json.loads(api_res)['usage']['completion_tokens'] for api_res in not_null_api_responses])
 
-            total_cost = self.prompt_cost * (total_prompt_tokens/1000) + self.completion_cost * (total_completion_tokens/1000)
+            total_cost = self.prompt_cost * (total_prompt_tokens/1_000_000) + self.completion_cost * (total_completion_tokens/1_000_000)
             print(f"\nTotal cost: ${total_cost:.4f}")
         except Exception as e:
             print(f"Error getting cost: {e}")
